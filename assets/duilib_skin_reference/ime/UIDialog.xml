@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="400,90" sizebox="0,0,0,0" caption="0,0,2000,90">
+	<Font name="宋体" size="13" bold="false" italic="false" />
+	<VerticalLayout name="BGContainer" minwidth="400" maxwidth="600" bkimage="common/editbox.png">
+		<VerticalLayout height="60" childpadding="5" padding="10,10,10,10" name="VerticalLayoutUI2" bkcolor="#00FF00FF">
+			<Text name="ImeText" height="20" textpadding="3,3,3,3" text="" font="0" bkcolor="#00000000" textcolor="#FFB48C5A" align="left" />
+			<Text name="ImeCandidates" height="20" textpadding="3,3,3,3" text="" font="0" bkcolor="#0000FF00" textcolor="#FFB48C5A" align="left" />
+			<Text name="ImeName" height="20" textpadding="3,3,3,3" text="" font="0" bkcolor="#00FFFF00" textcolor="#FFB48C5A" align="left" />
+		</VerticalLayout>
+	</VerticalLayout>
+</Window>

@@ -1,0 +1,9 @@
+LIBRARY "sdologinentry"
+
+EXPORTS
+    igwInitialize
+    igwGetModule
+    igwTerminal
+    SDOLInitialize
+    SDOLGetModule
+    SDOLTerminal

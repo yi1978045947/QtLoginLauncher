@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="481,393" caption="0,0,481,50" linkfontcolor="#000289f1" linkhoverfontcolor="#0000baff">
+    <Font name="宋体" size="16" bold="false" italic="false" default="true" />
+    <Font name="宋体" size="12" bold="false" italic="false" />
+
+    <Container name="containterProtectedA8" width="512" height="416" bkimage="protect_a8/bg.png">
+        <Button name="CloseBtn" float="true" pos="442,6,0,0" width="28" height="28" textcolor="#00ffda8a" hottextcolor="#00ffd800" disabledtextcolor="#FFA7A6AA" normalimage="container/btn_close_n.png" hotimage="container/btn_close_o.png" pushedimage="container/btn_close_c.png" showhtml="true" align="center"/>
+    
+        <Button name="OkBtn" float="true" pos="118,307,0,0" width="114" height="46" textcolor="#FF242224" disabledtextcolor="#FFA7A6AA" showhtml="true" align="center" normalimage="common/btn_ok_n.png" hotimage="common/btn_ok_o.png" pushedimage="common/btn_ok_c.png"  />
+        <Button name="CancelBtn" float="true" pos="252,307,0,0" width="114" height="46" textcolor="#FF242224" disabledtextcolor="#FFA7A6AA" showhtml="true" align="center" normalimage="common/btn_cancel_n.png" hotimage="common/btn_cancel_o.png" pushedimage="common/btn_cancel_c.png" />
+        <Text name="TextUI3" text="{a A8Help}{f 1}{u}更多详情{/u}{/f}{/a}" float="true" pos="320,191,0,0" width="117" height="20"  textpadding="2,0,2,0" textcolor="#FF000000" disabledtextcolor="#FFA7A6AA" showhtml="true" align="wrap" />
+          	
+        <Edit name="DynamicCodeEdit" float="true" pos="151,123,0,0" width="76" height="32" bkcolor="#0" caretcolor="#FF000000" caretsize="2,16" bordercolor="#0" textpadding="2,4,0,4" textcolor="#FF000000" disabledtextcolor="#FFA7A6AA" maxchar="8" focusedimage="protect_code/editbox_o.png" />
+        <Label name="ChallengeCodeLabel" text="1346" float="true" pos="153,85,0,0" width="89" height="19" bordercolor="#0" textcolor="#00e40000" disabledtextcolor="#FFA7A6AA" />
+     
+     </Container>
+</Window>

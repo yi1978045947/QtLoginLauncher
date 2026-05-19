@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="315,321" caption="0,0,315,0" linkfontcolor="#00ffda8a" linkhoverfontcolor="#00ffd800" >
+	<Font name="微软雅黑" size="18" bold="true" italic="false" />
+	<Font name="微软雅黑" size="15" bold="false" italic="false" />
+	<Font name="微软雅黑" size="14" bold="false" italic="false" />
+    <VerticalLayout name="VerticalLayoutUI1" pos="0,0,315,321" width="315" height="321" bkimage="face_collect_msg_confirm_close/bg.png">
+			
+		  <Text name="Title" font="0" text="提示" float="true" pos="129,18,0,0" width="50" height="40" textcolor="#00000000" disabledtextcolor="#00000000" align="center" showhtml="true" />
+		  <Text name="HintText1" font="2" text="您正在进行账号持有人信息登记," float="true" pos="19,40,0,0" width="270" height="80" textcolor="#00000000" disabledtextcolor="#00000000" align="center" showhtml="true" />
+		  <Text name="HintText2" font="2" text="是否确认退出?" float="true" pos="18,60,0,0" width="270" height="80" textcolor="#00000000" disabledtextcolor="#00000000" align="center" showhtml="true" />
+
+          <Button name="OkBtn"  font="1"  text="继续登记" textpadding="0,3,0,0" float="true" pos="171,232,0,0" width="112" height="40" textcolor="#FFFFFFFF" disabledtextcolor="#FFFFFFFF" align="center" normalimage="face_collect_msg_confirm_close/btn_ok_n.png" hotimage="face_collect_msg_confirm_close/btn_ok_n.png" pushedimage="face_collect_msg_confirm_close/btn_ok_n.png" />
+
+		  <Button name="CloseBtn" font="1"  text="确认退出" textpadding="0,3,0,0" float="true" pos="36,232,0,0" width="112" height="40" textcolor="#00000000" disabledtextcolor="#00000000" align="center" normalimage="face_collect_msg_confirm_close/btn_close_n.png" hotimage="face_collect_msg_confirm_close/btn_close_n.png" pushedimage="face_collect_msg_confirm_close/btn_close_n.png" />
+
+       
+    </VerticalLayout>
+</Window>
+

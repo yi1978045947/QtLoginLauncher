@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Config>
+    <TcpPassport value="http://cas.sdo.com" />
+    <UdpPassport value="https://cas.sdo.com" />
+    <SSOServer value="https://cas.sdo.com/CAS/OA/Login.Authen?SessionID=" />
+    <PrivacyPolicyUrl value="https://we.sdoprofile.com/common/static/register/public/privacy_game.html" />
+    <ServicerAgreementUrl value="https://we.sdoprofile.com/common/static/register/public/user_agreements.html" />
+    <SupplementaryRulesUrl value="https://mxd.web.sdo.com/web7/news/violation.html" />
+    <DaoyuHomeUrl value="https://www.daoyu8.com/#/" />
+    <ForgotPasswordUrl value="https://i.sdo.com/index/findPassword" />
+    <MaxAccountCount value="10" />
+    <!--ClickInterval 扫码界面刷新二维码间隔时间-->
+    <ClickInterval value="1500" />
+    <ProtocolShowTimer value="false" />
+    <ProtocolTimer value="5" />
+</Config>

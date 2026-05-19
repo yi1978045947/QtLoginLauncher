@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="616,530" caption="0,0,0,0" showdirty="false">
+	<Font name="微软雅黑" size="21" bold="true" italic="false" />
+	<VerticalLayout name="VerticalLayoutUI1" pos="0,100,0,0" bkimage="protocol/ys.png">
+		<HorizontalLayout name="HorizontalLayoutUI2" height="455">
+			<SDORemoteActiveXControlUI name="ie" padding="8,63,0,20" />
+		</HorizontalLayout>
+
+		<Button name="OKBtn" font="0" text="" float="true" pos="224,455,0,0" width="171" height="56" textcolor="#FFFFFFFF" disabledtextcolor="#FFA7A6AA" align="center" normalimage="protocol/5_a.png" hotimage="protocol/5_b.png" pushedimage="protocol/5_c.png" disabledimage="protocol/5_d.png" />
+		
+	</VerticalLayout>
+</Window>

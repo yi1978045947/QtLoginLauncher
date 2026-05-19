@@ -1,0 +1,9 @@
+LIBRARY "sdologinsdk"
+
+EXPORTS
+    SDOLInitialize
+    SDOLGetModule
+    SDOLTerminal
+    igwInitialize
+    igwGetModule
+    igwTerminal

@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="351,274" caption="0,0,351,50" linkfontcolor="#000289f1" linkhoverfontcolor="#0000baff">
+    <Font name="微软雅黑" size="16" bold="false" italic="false" />
+    <Font name="微软雅黑" size="15" bold="false" italic="false" />
+    <VerticalLayout name="VerticalLayoutUI1" width="351" height="274" bkimage="protect_code/bg.png">
+       		<Button name="CloseBtn" float="true" pos="306,6,0,0" width="36" height="36" textcolor="#00ffda8a" hottextcolor="#00ffd800" disabledtextcolor="#FFA7A6AA" normalimage="container/btn_close_n.png" hotimage="container/btn_close_o.png" pushedimage="container/btn_close_c.png" showhtml="true" align="center"/>
+    
+            <Label name="IdentifyingCodeLabel" float="true" pos="100,70,0,0" width="120" height="60" bkimage="protect_code/IdentifyingCodeImg01.jpg" bordercolor="#00bfbfbf" textcolor="#FF000000" disabledtextcolor="#FFA7A6AA" />
+
+            <Edit name="IdentifyingCodeEdit" font="1"  caretcolor="#ffeddc" caretsize="2,16" float="true" pos="100,143,0,0" width="174" height="32" bkcolor="#0" bordercolor="#0" textpadding="6,5,4,3" textcolor="ffeddc" disabledtextcolor="#ffeddc" maxchar="6" bkimage="protect_code/editbox_0.png"  focusedimage="protect_code/editbox_o.png" defaulttextfont="1" defaulttextcolor="#ffeddc" defaulttext="验证码不区分大小写" showhtml="true" />
+
+            <Button name="ChangeCodeBtn" text="" float="true" pos="240,100,0,0" width="32" height="32" textcolor="#000289f1" hottextcolor="#0000baff" disabledtextcolor="#FFA7A6AA" normalimage="protect_code/btn_refresh_n.png" hotimage="protect_code/btn_refresh_o.png" pushedimage="protect_code/btn_refresh_c.png" showhtml="true" align="center" />
+
+            
+            <Button name="OkBtn" float="true" pos="125,195,0,0" width="117" height="40" textcolor="#FF242224" disabledtextcolor="#FFA7A6AA" align="center" normalimage="protect_code/btn_ok_n.png" hotimage="protect_code/btn_ok_o.png" pushedimage="protect_code/btn_ok_c.png" />
+            <!-- <Button name="CancelBtn" float="true" pos="187,223,0,0" width="114" height="46" textcolor="#FF242224" disabledtextcolor="#FFA7A6AA" align="center" normalimage="common/btn_cancel_n.png" hotimage="common/btn_cancel_o.png" pushedimage="common/btn_cancel_c.png" /> -->
+            
+    </VerticalLayout>
+</Window>

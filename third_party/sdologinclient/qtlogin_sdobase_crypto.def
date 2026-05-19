@@ -1,0 +1,5 @@
+LIBRARY "qtlogin_sdobase_crypto"
+
+EXPORTS
+    QtLogin_MakeLegacyPasswordTextBase64 = _QtLogin_MakeLegacyPasswordTextBase64@16
+    QtLogin_SdoaEncryptWithDynamicKey = _QtLogin_SdoaEncryptWithDynamicKey@20

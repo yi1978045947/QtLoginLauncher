@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="461,504" caption="0,0,461,48">
+	<Font name="微软雅黑" size="14" bold="false" italic="false"  />
+	<Font name="微软雅黑" size="15" bold="false" italic="false" />
+	<Font name="微软雅黑" size="12" bold="false" italic="false"  />
+    <!-- <Font name="宋体" size="16" bold="false" italic="false" default="true" /> -->
+    <VerticalLayout name="VerticalLayoutUI1" width="461" height="504" bkimage="PlayerInfo_Collect/bg.png">
+		<Text name="fcmTips" text="我们已于2019年11月1日起正式启动网络游戏防沉迷系统。根据国家新闻出版署相关要求，同时也为保护您的合法权益，请您配合进行实名注册。
+		
+		针对未成年人的防沉迷措施，详情请见国家新闻出版署《关于防止未成年人沉迷网络游戏的通知》。" float="true" pos="36,60,428,230" textpadding="1,1,1,1"  font="0" bkcolor="#0" textcolor="#ffeddc" align="left" showhtml="true" font="0" linespace="8" />
+        <Button name="CancelBtn" float="true" pos="422,6,0,0" width="28" height="28" textcolor="#00ffda8a" hottextcolor="#00ffd800" disabledtextcolor="#FFA7A6AA" normalimage="container/btn_close_n.png" hotimage="container/btn_close_o.png" pushedimage="container/btn_close_c.png" showhtml="true" align="center"/>
+    
+		<Text name="normalTips" text="您的资料只用于游戏实名认证及防沉迷信息，不用做其他用途，请放心填写。" font="2" linespace="4" float="true" pos="31,238,0,0" width="387" height="28"  textcolor="#ffeddc" bkimage="login/bg.png" align="center" showhtml="true"  />
+		
+        <Button name="CancelBtn" float="true" pos="416,6,0,0" width="36" height="36" textcolor="#00ffda8a" hottextcolor="#00ffd800" disabledtextcolor="#FFA7A6AA" normalimage="container/btn_close_n.png" hotimage="container/btn_close_o.png" pushedimage="container/btn_close_c.png" showhtml="true" align="center"/>
+		
+        <Edit name="UserNameEdit" caretcolor="#ffeddc" caretsize="2,16" float="true" pos="178,284,0,0" font="1" width="204" height="32" bkcolor="#0" bordercolor="#0" textpadding="4,4,0,4" textcolor="#ffeddc" disabledtextcolor="#FFA7A6AA"  />
+        <Edit name="IDCardEdit" caretcolor="#ffeddc" caretsize="2,16" float="true" pos="178,323,0,0" font="1" width="204" height="32" bkcolor="#0" bordercolor="#0" textpadding="4,4,0,4" textcolor="#ffeddc" disabledtextcolor="#FFA7A6AA"  />
+        <Edit name="EmailAddressEdit" caretcolor="#ffeddc" caretsize="2,16" float="true" pos="178,362,0,0" font="1" width="204" height="32" bkcolor="#0" bordercolor="#0" textpadding="4,4,0,4" textcolor="#ffeddc" disabledtextcolor="#FFA7A6AA"  />
+        <Button name="OkBtn" float="true" pos="101,425,0,0" width="117" height="40" textcolor="#FF242224" disabledtextcolor="#FFA7A6AA" align="center" normalimage="common/btn_ok_n.png" hotimage="common/btn_ok_o.png" pushedimage="common/btn_ok_c.png" />
+        <Button name="CloseBtn" float="true" pos="254,425,0,0" width="117" height="40" textcolor="#FF000000" disabledtextcolor="#FFA7A6AA" align="center" normalimage="common/btn_cancel_n.png" hotimage="common/btn_cancel_o.png" pushedimage="common/btn_cancel_c.png" />
+    
+    </VerticalLayout>
+</Window>

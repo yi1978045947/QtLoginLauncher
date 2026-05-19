@@ -1,0 +1,30 @@
+# Build outputs
+/build/
+/build_*/
+
+# Local IDE files
+/.qtcreator/
+/.vs/
+/.vscode/
+*.user
+*.suo
+*.VC.db
+*.VC.VC.opendb
+
+# Runtime logs and generated local config
+*.log
+/bin/
+/lib/
+/config/userinfo.xml
+/config/userinfo.cfg
+
+# CEF 109 binary packages are too large for normal GitHub storage.
+# Keep the source tree path and README, but download/extract CEF locally.
+/CefProject/*
+!/CefProject/README.md
+
+# Archives and temporary files
+*.tar.bz2
+*.zip.tmp
+*.tmp
+~$*

@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window sizebox="4,4,6,6">
+				
+    <VerticalLayout name="VerticalLayoutUI1" pos="0,0,0,0" width="422" height="171" >
+			<HorizontalLayout name="HorizontalLayoutUI2" pos="0,0,0,0" width="422" height="171" >		
+				<Container name="bg" width="422" height="171" bkimage="" >
+					<Text name="MESSAGE_HINT_HOST" text="" font="1" visible="false" bkimage="common/bg_tips.png" float="true" pos="122,3,0,0" width="200" height="26" textpadding="2,6,2,7" textcolor="#FF000000" disabledtextcolor="#FF333333" showhtml="true" />
+					
+					<Label name="StaticLabel1" text="" float="true" pos="70,34,0,0" width="38" height="20" textcolor="#FFFFFFFF" disabledtextcolor="#FFA7A6AA" bkimage="common/label1.png" showhtml="true" />
+					<Combo name="AccountCombox" textpadding="4,3,12,3" editcaretsize="2,16" font="0" dropxml="combobox/ComboDrop.xml" float="true" pos="120,29,0,0" droprect="292,107,320,130" width="204" height="32" dropboxsize="0,169" dropboxgap="2,0" itembkcolor="#0F0F0F" editcaretcolor="#FF000000" normalimage="combobox/combo_n.png" hotimage="combobox/combo_c.png" pushedimage="combobox/combo_c.png" customfocusedimage="combobox/combo_o.png"  itemtextcolor="#FF000000" itemhotimage="combobox/select_item.png" itemselectedbkcolor="#0" itemhottextcolor="#FFFFFFFF" itemhotbkcolor="#0" itemdisabledtextcolor="#FF000000" itemdisabledbkcolor="#0" editdefaulttext="绑定手机的账号/手机账号" editdefaulttextcolor="#FF9D9D9C" editmaxchar="64" editdefaulttextfont="1" />
+					<Label name="StaticLabel2" text="" float="true" pos="58,73,0,0" width="52" height="20" textcolor="#FFFFFFFF" disabledtextcolor="#FF333333" bkimage="common/label3.png" showhtml="true" />
+					<Edit name="VerifyCodeEdit" caretsize="2,16" bkcolor="#0" float="true" pos="120,68,0,0" width="204" height="32" bkimage="common/editbox_0.png" focusedimage="common/editbox_o.png" textpadding="6,4,30,4" textcolor="#FF000000" caretcolor="#FF000000" textpadding="4,3,4,3" disabledtextcolor="#FFA7A6AA" maxchar="6" />
+					<Button name="GetVerifyCodeBtn" text="{f 2}免费获取验证码{/f}" float="true" pos="197,68,0,0" width="127" height="32" textcolor="#ffffffff" disabledtextcolor="#FFA7A6AA" showhtml="true" align="center" normalimage="cellphone_register/btn_sernum_n.png" hotimage="cellphone_register/btn_sernum_o.png" pushedimage="cellphone_register/btn_sernum_c.png" disabledimage="cellphone_register/btn_sernum_d.png" />	
+					<Label name="GetValidateCodeLabel" text="{f 2}已发送(%ds后重发){/f}" float="true" pos="0,0,0,0" width="0" height="0" visible="false" showhtml="true"/>
+					<!--
+					<Label name="HintLabel" text=" {f 2}提示：点击免费获取短信验证码。{/f}" float="true" pos="0,170,0,0" width="510" height="26" textcolor="#00FF8000" disabledtextcolor="#FFA7A6AA" showhtml="true" align="center"/>
+					-->
+					<Button name="OkBtn" float="true" pos="117,124,0,0" width="211" height="46" text="" textcolor="#ff38220c" disabledtextcolor="#FFFFFFFF" align="center" normalimage="common/btn_login_n.png" hotimage="common/btn_login_o.png" pushedimage="common/btn_login_c.png" disabledimage="common/btn_login_d.png" showhtml="true"/>
+				
+				</Container>
+			</HorizontalLayout>
+    </VerticalLayout>
+</Window>

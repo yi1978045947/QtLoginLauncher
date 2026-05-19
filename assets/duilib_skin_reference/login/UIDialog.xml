@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window >
+    <VerticalLayout name="VerticalLayoutUI1" pos="0,0,0,0" width="442" height="191" >
+			<HorizontalLayout name="HorizontalLayoutUI2" pos="0,0,0,0" width="442" height="191" >
+				<Container name="bg" width="442" height="171" bkimage="" >
+					
+					<Text name="RelativedAccount" visible="false" text="" font="2" float="true" pos="120,10,0,0" width="180" height="19" textpadding="2,0,2,0" textcolor="#FF000000" disabledtextcolor="#FF333333" align="left" />
+					<Button name="RelativedAccountCloseBtn" text="" visible="false" float="true" pos="298,11,0,0" width="15" height="15" showhtml="true" align="center" normalimage="login/icon_delete_c.PNG" hotimage="login/icon_delete_o.PNG" pushedimage="login/icon_delete_n.PNG" />
+					<Label name="RelativedAccountHintLabel" text="已绑定账号：" visible="false" />
+					
+					<Text name="MESSAGE_HINT_HOST" text="" font="6" visible="false"  float="true" pos="95,117,0" width="300" height="26"  textcolor="#ffffffff" disabledtextcolor="#ffffffff" showhtml="true" />
+					
+					<Label name="LabelUI1"  float="true" pos="53,53,0,0" width="40" height="22" bkimage="login/account.png" showhtml="true" />
+					<Combo name="AccountCombox" textpadding="5,3,0,3" editcaretsize="2,16" font="11" dropxml="combobox/ComboDrop.xml" float="true" pos="96,51,0,0" droprect="152,0,175,47" width="177" height="29" dropboxsize="0,169" dropboxgap="2,0" itembkcolor="#ffeddc" editcaretcolor="#ffeddc" normalimage="combobox/combo_n.png" hotimage="combobox/combo_c.png" pushedimage="combobox/combo_c.png" customfocusedimage="combobox/combo_o.png"  itemtextcolor="#ffeddc" itemhotimage="combobox/itemselect.png" itemselectedbkcolor="#0" itemhottextcolor="#ffeddc" itemhotbkcolor="#0" itemdisabledtextcolor="#ffeddc" itemdisabledbkcolor="#0" editdefaulttext="手机/邮箱/个性账号" editdefaulttextcolor="#ffeddc" editmaxchar="64" editdefaulttextfont="3" />
+					<Label name="LabelUI2" float="true" pos="53,91,0,0" width="40" height="22" bkimage="login/password.png" showhtml="true" />
+					<Edit name="PasswordEdit" caretsize="2,16" bkcolor="#0" float="true" font="0" pos="96,88,0,0" width="177" height="28" bkimage="common/editbox_0.png" focusedimage="common/editbox_o.png" textpadding="8,4,30,4" textcolor="#ffeddc" caretcolor="#ffeddc" disabledtextcolor="#FF999999" password="true" strongpassword="true" maxchar="30" />
+					<Button name="KeyboardBtn" float="true" pos="247,95,0,0" width="18" height="14" textcolor="#FFFFFFFF" disabledtextcolor="#FFA7A6AA" align="center" normalimage="login/btn_keyboard_n.png" hotimage="login/btn_keyboard_o.png" pushedimage="login/btn_keyboard_c.png" />        
+					<Button name="LoginBtn" float="true" pos="281,58,0,0" width="104" height="52"  align="center" normalimage="common/btn_login_n.png" hotimage="common/btn_login_c.png" pushedimage="common/btn_login_c.png" disabledimage="common/btn_login_c.png" showhtml="true"/>
+				
+					<Text name="MobileLoginEntryCtrl" text="" visible="false" float="true" pos="0,210,0,0" width="280" height="23" bkimage="login/bk.png" textcolor="#FF000000" disabledtextcolor="#FF666666" bkcolor="#01000000" showhtml="true" align="center" />
+					<Label name="BaseHintLabel" text="您还可以使用:" visible="false" float="true" pos="0,210,0,0" width="280" height="23" textcolor="#00000000" />
+					<Label name="ValidateCodeLoginHintLabel" text=" {u}{a LoginByValidateCode}短信验证码登录{/a}{/u}" visible="false" float="true" pos="0,210,0,0" width="280" height="23" textcolor="#00000000" />
+					<Label name="PushMessageLoginHintLabel" text=" {u}{a LoginByPushMessage}手机一键登录{/a}{/u}" visible="false" float="true" pos="0,210,0,0" width="280" height="23" textcolor="#00000000" />
+					
+				
+				</Container>
+			</HorizontalLayout>
+		</VerticalLayout>
+</Window>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="352,269" caption="0,0,352,50">
+	<Font name="宋体" size="16" bold="false" italic="false"  />
+    <VerticalLayout name="VerticalLayoutUI1" pos="0,0,352,269" width="352" height="269" bkimage="msgbox/bg.png">
+       		<Button name="CloseBtn" float="true" pos="309,6,0,0" width="36" height="36" textcolor="#00ffda8a" hottextcolor="#00ffd800" disabledtextcolor="#FFA7A6AA" normalimage="container/btn_close_n.png" hotimage="container/btn_close_o.png" pushedimage="container/btn_close_c.png" showhtml="true" align="center"/>
+    
+            <Button name="OkBtn" float="true" pos="51,189,0,0" width="114" height="46" textcolor="#FF242224" disabledtextcolor="#FFA7A6AA" align="center" normalimage="common/btn_ok_n.png" hotimage="common/btn_ok_o.png" pushedimage="common/btn_ok_c.png" />
+            <Button name="CancelBtn" float="true" pos="189,189,0,0" width="114" height="46" textcolor="#FF242224" disabledtextcolor="#FFA7A6AA" align="center" normalimage="common/btn_cancel_n.png" hotimage="common/btn_cancel_o.png" pushedimage="common/btn_cancel_c.png" />
+            <Text name="HintText" text="" float="true" pos="27,100,0,0" width="300" height="60" textcolor="#FF000000" disabledtextcolor="#FFA7A6AA" align="center" showhtml="true" />
+       
+    </VerticalLayout>
+</Window>

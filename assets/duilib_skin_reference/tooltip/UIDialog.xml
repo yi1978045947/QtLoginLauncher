@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="600,39" sizebox="0,0,0,0" caption="0,0,0,0">
+	<Font name="微软雅黑" size="15" bold="false" italic="false" />
+	<VerticalLayout name="TooltipVerticalLayout" inset="10,10,10,10" bkimage="combobox/bg.png">
+		<Text name="ToolTipHint" width="400" height="39" textpadding="0,0,0,0" text="" font="0" bkcolor="#0" textcolor="#FF000000" align="left" />
+	</VerticalLayout>
+</Window>

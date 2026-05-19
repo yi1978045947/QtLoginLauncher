@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Window>
+	<LoginedAccountListContainerElement width="361" height="25">
+		<HorizontalLayout inset="2,0,15,0">
+			<Option name="itemicon" float="true" pos="8,13,0,0" width="3" height="3" align="left" normalimage="accountlst/itemicon_w.png" hotimage="accountlst/itemicon_w.png" selectedimage="accountlst/itemicon_w.png" disabledimage="accountlst/itemicon_w.png" />
+			<Label name="username" float="true" pos="20,0,0,0" width="361" height="25" align="left" font="3" textcolor="#ffffffff" selectedtextcolor="#ffffffff" hottextcolor="#ffffffff"  disabledtextcolor="#ffeddc" />
+		</HorizontalLayout>
+	</LoginedAccountListContainerElement>
+</Window>

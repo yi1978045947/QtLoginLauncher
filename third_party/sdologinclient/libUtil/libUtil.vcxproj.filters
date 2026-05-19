@@ -1,0 +1,68 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="json">
+      <UniqueIdentifier>{fc170ca6-35fe-458b-ab51-2d37dc5a84a2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="json\arraylist.c">
+      <Filter>json</Filter>
+    </ClCompile>
+    <ClCompile Include="json\debug.c">
+      <Filter>json</Filter>
+    </ClCompile>
+    <ClCompile Include="json\json_object.c">
+      <Filter>json</Filter>
+    </ClCompile>
+    <ClCompile Include="json\json_tokener.c">
+      <Filter>json</Filter>
+    </ClCompile>
+    <ClCompile Include="json\json_util.c">
+      <Filter>json</Filter>
+    </ClCompile>
+    <ClCompile Include="json\linkhash.c">
+      <Filter>json</Filter>
+    </ClCompile>
+    <ClCompile Include="json\printbuf.c">
+      <Filter>json</Filter>
+    </ClCompile>
+    <ClCompile Include="md5.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="json\arraylist.h">
+      <Filter>json</Filter>
+    </ClInclude>
+    <ClInclude Include="json\bits.h">
+      <Filter>json</Filter>
+    </ClInclude>
+    <ClInclude Include="json\config.h">
+      <Filter>json</Filter>
+    </ClInclude>
+    <ClInclude Include="json\debug.h">
+      <Filter>json</Filter>
+    </ClInclude>
+    <ClInclude Include="json\json.h">
+      <Filter>json</Filter>
+    </ClInclude>
+    <ClInclude Include="json\json_object.h">
+      <Filter>json</Filter>
+    </ClInclude>
+    <ClInclude Include="json\json_object_private.h">
+      <Filter>json</Filter>
+    </ClInclude>
+    <ClInclude Include="json\json_tokener.h">
+      <Filter>json</Filter>
+    </ClInclude>
+    <ClInclude Include="json\json_util.h">
+      <Filter>json</Filter>
+    </ClInclude>
+    <ClInclude Include="json\linkhash.h">
+      <Filter>json</Filter>
+    </ClInclude>
+    <ClInclude Include="json\printbuf.h">
+      <Filter>json</Filter>
+    </ClInclude>
+    <ClInclude Include="md5.h" />
+  </ItemGroup>
+</Project>

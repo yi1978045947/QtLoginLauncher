@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="481,393" caption="0,0,481,50">
+    <Font name="宋体" size="16" blod="false" italic="false" default="true"/>
+	
+    <Container name="containterProtectedA8" width="481" height="393" bkimage="protect_key/bg.png">
+        		<Button name="CloseBtn" float="true" pos="442,6,0,0" width="28" height="28" textcolor="#00ffda8a" hottextcolor="#00ffd800" disabledtextcolor="#FFA7A6AA" normalimage="container/btn_close_n.png" hotimage="container/btn_close_o.png" pushedimage="container/btn_close_c.png" showhtml="true" align="center"/>
+    
+            <Label name="PosLabel1" text="第1位" float="true" pos="28,91,0,0" width="58" height="31" textcolor="#00e40000" disabledtextcolor="#FFA7A6AA" align="center" />
+            <Label name="PosLabel2" text="第2位" float="true" pos="94,91,0,0" width="58" height="31" textcolor="#00e40000" disabledtextcolor="#FFA7A6AA" align="center" />
+            <Label name="PosLabel3" text="第3位" float="true" pos="160,91,0,0" width="58" height="31" textcolor="#00e40000" disabledtextcolor="#FFA7A6AA" align="center" />
+            <Label name="PosLabel4" text="第4位" float="true" pos="226,91,0,0" width="58" height="31" textcolor="#00e40000" disabledtextcolor="#FFA7A6AA" align="center" />
+            <Edit name="PosEdit1" caretsize="2,16" caretcolor="#FF000000" bkcolor="#0" bordercolor="#0" float="true" pos="28,122,0,0" width="58" height="32" textpadding="4,3,4,3" textcolor="#FF000000" disabledtextcolor="#FFA7A6AA" align="center" maxchar="1" focusedimage="protect_code/editbox_o.png" />
+            <Edit name="PosEdit2" caretsize="2,16" caretcolor="#FF000000" bkcolor="#0" bordercolor="#0" float="true" pos="94,122,0,0" width="58" height="32" textpadding="4,3,4,3" textcolor="#FF000000" disabledtextcolor="#FFA7A6AA" align="center" maxchar="1" focusedimage="protect_code/editbox_o.png" />
+            <Edit name="PosEdit3" caretsize="2,10" caretcolor="#FF000000" bkcolor="#0" bordercolor="#0" float="true" pos="160,122,0,0" width="58" height="32" textpadding="4,3,4,3" textcolor="#FF000000" disabledtextcolor="#FFA7A6AA" align="center" maxchar="1" focusedimage="protect_code/editbox_o.png" />
+            <Edit name="PosEdit4" caretsize="2,10" caretcolor="#FF000000" bkcolor="#0" bordercolor="#0" float="true" pos="226,122,0,0" width="58" height="32" textpadding="4,3,4,3" textcolor="#FF000000" disabledtextcolor="#FFA7A6AA" align="center" maxchar="1" focusedimage="protect_code/editbox_o.png" />
+            
+            <Button name="OkBtn" float="true" pos="118,307,0,0" width="114" height="46" textcolor="#FF242224" disabledtextcolor="#FFA7A6AA" showhtml="true" align="center" normalimage="common/btn_ok_n.png" hotimage="common/btn_ok_o.png" pushedimage="common/btn_ok_c.png"  />
+        		<Button name="CancelBtn" float="true" pos="252,307,0,0" width="114" height="46" textcolor="#FF242224" disabledtextcolor="#FFA7A6AA" showhtml="true" align="center" normalimage="common/btn_cancel_n.png" hotimage="common/btn_cancel_o.png" pushedimage="common/btn_cancel_c.png" />
+       
+    </Container>
+</Window>

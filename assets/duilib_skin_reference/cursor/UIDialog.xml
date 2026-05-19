@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="17,22" sizebox="0,0,0,0" caption="0,0,0,0">
+	<VerticalLayout bkimage="cursor/cursor.png">
+		
+	</VerticalLayout>
+</Window>

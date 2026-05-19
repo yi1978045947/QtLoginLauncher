@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Window>
+	<Font name="宋体" size="16" bold="false" italic="false" default="true" />
+	<VerticalLayout name="ComboDrop" inset="0,2,0,2" bkcolor="#0" bordercolor="#0" bkimage="combobox/bg.png" bordersize="2" vscrollbar="true" hscrollbar="false">
+	</VerticalLayout>
+</Window>

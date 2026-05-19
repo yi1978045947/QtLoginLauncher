@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window>
+	<!-- <Default name="VScrollBar" value="width=&quot;15&quot; showbutton1=&quot;true&quot; showbutton2=&quot;true&quot; button1normalimage=&quot;accountlst/button1_n.png&quot; button1hotimage=&quot;accountlst/button1_o.png&quot; button1pushedimage=&quot;accountlst/button1_c.png&quot; button2normalimage=&quot;accountlst/button2_n.png&quot; button2hotimage=&quot;accountlst/button2_o.png&quot; button2pushedimage=&quot;accountlst/button2_c.png&quot; thumbnormalimage=&quot;accountlst/scrollbar_n.png&quot; thumbhotimage=&quot;accountlst/scrollbar_o.png&quot; thumbpushedimage=&quot;accountlst/scrollbar_c.png&quot; bknormalimage=&quot;accountlst/scrollbarbk.png&quot;" /> -->
+
+
+   <Default name="VScrollBar" value="width=&quot;10&quot; showbutton1=&quot;false&quot; showbutton2=&quot;false&quot; thumbnormalimage=&quot;accountlst/scrollbar.png&quot; thumbhotimage=&quot;accountlst/scrollbar.png&quot; thumbpushedimage=&quot;accountlst/scrollbar.png&quot; bknormalimage=&quot;accountlst/scrollbarbk1.png&quot;" />
+	
+	<VerticalLayout name="VerticalLayoutUI1" pos="10,0,0,0" inset="9,0,0,0" width="443" height="351">
+			<HorizontalLayout name="HorizontalLayoutUI1" float="true" pos="0,0,0,0" width="443" height="351">
+					<Container name="bg" width="443" height="351" bkimage="accountlst/frame.png">
+						
+						<List name="AccountList" float="true" pos="51,57,0,0" width="328" height="126" header="hidden" tooltipforlong="true" bkcolor="#0" itemtextcolor="#FF000000"  itemselectedimage="accountlst/itemselect.png" itemhotimage="accountlst/itemselect.png" itemselectedtextcolor="#FFffffff" itemhottextcolor="#FFffffff"  vscrollbar="true" > 
+						</List>
+				
+						<Button name="QuickLoginOkBtn" float="true" pos="169,196,0,0" width="104" height="52"  align="center" normalimage="common/btn_login_n.png" hotimage="common/btn_login_c.png" pushedimage="common/btn_login_c.png" disabledimage="common/btn_login_c.png" showhtml="true"/>
+						<Button name="ReturnTabBtn" text="{f 5}其他账号登录>>{/f}" float="true" pos="266,23,0,0" width="120" height="32" textcolor="#ffeddc" hottextcolor="#ffeddc" disabledtextcolor="#ffeddc" showhtml="true" align="center" />
+						
+					</Container>
+			</HorizontalLayout>
+	</VerticalLayout>
+</Window>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<ClientInfo>
+    <EnableQuickLogin value="True" />
+    <SkinType value="0" />
+    <AppName value="QtLoginRewrite" />
+    <AppID value="791000388" />
+    <AreaId value="0" />
+    <GroupId value="0" />
+</ClientInfo>

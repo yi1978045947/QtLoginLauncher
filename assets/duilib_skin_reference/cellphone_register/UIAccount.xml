@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Window>
+	<AccountListContainerElement width="204" height="20">
+		<HorizontalLayout inset="2,0,2,0">
+			<Label name="username" pos="4,0,0,0" width="160" height="20" float="true" align="left" textcolor="#ff000000" />
+			<Button name="remove" pos="176,2,0,0" width="15" height="15" float="true" normalimage="login/icon_delete_n.png"  align="center" hotimage="login/icon_delete_o.png" pushedimage="login/icon_delete_c.png" />
+		</HorizontalLayout>
+	</AccountListContainerElement>
+</Window>

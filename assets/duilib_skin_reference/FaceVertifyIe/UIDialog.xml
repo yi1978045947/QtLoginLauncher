@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<Window size="750,450" caption="0,0,750,35" showdirty="false">
+    <Font name="微软雅黑" size="16" bold="false" italic="false" />
+	<VerticalLayout name="VerticalLayoutUI1" bkimage="FaceVertifyIe/frame.png">
+		<HorizontalLayout name="HorizontalLayoutUI1" height="25">
+		
+			<VerticalLayout>
+				<HorizontalLayout height="14" />
+				<HorizontalLayout>
+					<VerticalLayout width="10" />
+					<VerticalLayout>
+						<Label name="Title" font="0" textcolor="#FFFFFFFF" textpadding="0,0,0,0" disabledtextcolor="#FFA7A6AA" />
+					</VerticalLayout>
+				</HorizontalLayout>
+			</VerticalLayout>
+		
+			<VerticalLayout width="53">
+				<Button name="CloseBtn" float="true" pos="8,5,0,0" width="36" height="36" textcolor="#FF000000" disabledtextcolor="#FFA7A6AA" align="center" normalimage="container/btn_close_n.png" hotimage="container/btn_close_o.png" pushedimage="container/btn_close_c.png" />
+				<!--<Button name="ForwardBtn" float="true" pos="0,10,0,0" width="16" height="16" textcolor="#FF000000" disabledtextcolor="#FFA7A6AA" align="center" normalimage="ie/prev_page_n.png" hotimage="ie/prev_page_o.png" pushedimage="ie/prev_page_c.png" />
+				<Button name="BackBtn" float="true" pos="20,10,0,0" width="16" height="16" textcolor="#FF000000" disabledtextcolor="#FFA7A6AA" align="center" normalimage="ie/next_page_n.png" hotimage="ie/next_page_o.png" pushedimage="ie/next_page_c.png" />-->
+			</VerticalLayout>
+		</HorizontalLayout>
+		<HorizontalLayout name="HorizontalLayoutUI2">
+			<SDORemoteActiveXControlUI name="ie" padding="9,20,-1,16" />
+		</HorizontalLayout>
+	</VerticalLayout>
+</Window>
