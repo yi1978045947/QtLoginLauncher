@@ -16,6 +16,8 @@ class QPushButton;
 
 namespace qtlogin::sdologin {
 
+void syncSharedAccountText(QWidget* host, QLineEdit* source, const QString& text);
+
 class AccountHistoryCombo final : public QWidget {
 public:
     struct Options {

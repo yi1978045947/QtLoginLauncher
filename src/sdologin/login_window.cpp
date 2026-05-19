@@ -1409,12 +1409,6 @@ void LoginWindow::registerSharedAccountEdit(QLineEdit* edit)
     if (!edit) {
         return;
     }
-    const auto existing = std::find_if(sharedAccountEdits_.begin(), sharedAccountEdits_.end(), [edit](const QPointer<QLineEdit>& item) {
-        return item.data() == edit;
-    });
-    if (existing == sharedAccountEdits_.end()) {
-        sharedAccountEdits_.append(QPointer<QLineEdit>(edit));
-    }
     if (!sharedAccountText_.isEmpty()) {
         const QSignalBlocker blocker(edit);
         edit->setText(sharedAccountText_);
@@ -1431,19 +1425,7 @@ void LoginWindow::updateSharedAccountText(QLineEdit* source, const QString& text
         return;
     }
     sharedAccountText_ = normalized;
-    for (int i = sharedAccountEdits_.size() - 1; i >= 0; --i) {
-        if (sharedAccountEdits_.at(i).isNull()) {
-            sharedAccountEdits_.removeAt(i);
-        }
-    }
-    for (const QPointer<QLineEdit>& editPointer : sharedAccountEdits_) {
-        QLineEdit* edit = editPointer.data();
-        if (!edit || edit == source) {
-            continue;
-        }
-        const QSignalBlocker blocker(edit);
-        edit->setText(sharedAccountText_);
-    }
+    syncSharedAccountText(this, source, sharedAccountText_);
 }
 
 void LoginWindow::prewarmProtocolBrowser()

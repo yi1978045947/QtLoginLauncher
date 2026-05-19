@@ -47,6 +47,7 @@ Implemented in:
   - Delete first closes the popup and queues the outer `userinfo.xml` write to the next Qt event tick.
   - The popup is parented to the top login window for overlay positioning; `AccountHistoryCombo` detaches callbacks and hides it during destruction so stale popup events cannot call back into a deleted combo.
   - The public setter still accepts the config layer's `std::vector<UserAccountEntry>`, but the widget stores accounts internally as `QVector<QString>`. This keeps the Qt UI control out of MSVC Debug STL iterator-proxy lifetime issues when a delete click refreshes the account list.
+  - `syncSharedAccountText` synchronizes the password and one-click account edits by discovering live `accountEdit` children from the current login window. It does not cache `QLineEdit` weak pointers, because delete/refresh callbacks can run while pages or popup widgets are being rebuilt.
 - `tests/account_history_combo_tests`
   - Creates a real Qt Widgets `AccountHistoryCombo`.
   - Opens the skinned dropdown through the arrow button.
@@ -61,7 +62,7 @@ Implemented in:
   - Password login records the submitted account after successful server login.
   - Password login and one-click login share one account input value while the login window is open.
   - One-click login passes account history and records the submitted account after successful mobile confirmation.
-  - Shared account edits are stored as guarded `QPointer<QLineEdit>` values and pruned on destroy, so delete/refresh paths do not touch stale line-edit pointers.
+  - Shared account text is propagated through `syncSharedAccountText(this, source, text)`, so delete/refresh paths only touch line edits that still exist in the current Qt object tree.
 - `src/sdologin/push_message_login_panel.cpp`
   - One-click account field now uses the same account history combo.
 
@@ -119,3 +120,17 @@ cmake --build .\qtlogin_rewrite\build_qt5_32 --config Debug --target sdologin ac
 ```
 
 The test covers deleting an account while refreshing the combo list and deleting while the host widget is destroyed by the remove callback.
+
+2026-05-19 second delete crash follow-up:
+
+Root cause:
+
+- A remaining crash still occurred after the popup/vector fix. Windows Error Reporting pointed at the Qt weak-pointer/reference-count load used by `QVector<QPointer<QLineEdit>>` in `LoginWindow::updateSharedAccountText`.
+- The delete path is `AccountHistoryCombo::removeAccount` -> `LoginWindow::removeHistoryAccount` -> `LoginWindow::updateSharedAccountText`. During this path the UI may be rebuilding popup/account controls, so caching `QPointer<QLineEdit>` entries in a long-lived vector was still fragile.
+
+Fix:
+
+- Removed the cached shared account edit vector from `LoginWindow`.
+- Added `syncSharedAccountText(QWidget* host, QLineEdit* source, const QString& text)`.
+- The sync step now scans live `accountEdit` children every time it needs to propagate text.
+- Added a regression test that syncs two account edits, deletes one edit, then syncs again.

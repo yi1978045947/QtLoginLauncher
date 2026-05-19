@@ -7,6 +7,7 @@
 #include <QFrame>
 #include <QMouseEvent>
 #include <QPushButton>
+#include <QLineEdit>
 #include <QWidget>
 
 #include "account_history_combo.h"
@@ -121,6 +122,30 @@ int main(int argc, char** argv)
 
         assert(removed);
         assert(!host);
+    }
+
+    {
+        QWidget host;
+        host.resize(240, 120);
+
+        auto* firstEdit = new QLineEdit(&host);
+        firstEdit->setObjectName(QStringLiteral("accountEdit"));
+        firstEdit->setText(QStringLiteral("source"));
+
+        auto* secondEdit = new QLineEdit(&host);
+        secondEdit->setObjectName(QStringLiteral("accountEdit"));
+        secondEdit->setText(QStringLiteral("old"));
+
+        qtlogin::sdologin::syncSharedAccountText(&host, firstEdit, QStringLiteral("18070557376"));
+
+        assert(firstEdit->text() == QStringLiteral("source"));
+        assert(secondEdit->text() == QStringLiteral("18070557376"));
+
+        delete secondEdit;
+        QApplication::processEvents();
+
+        qtlogin::sdologin::syncSharedAccountText(&host, nullptr, QStringLiteral("latest"));
+        assert(firstEdit->text() == QStringLiteral("latest"));
     }
     return 0;
 }

@@ -7,6 +7,7 @@
 #include <QFileInfo>
 #include <QFrame>
 #include <QFontMetrics>
+#include <QList>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPaintEvent>
@@ -261,6 +262,23 @@ private:
     std::function<void(const QString&)> removeHandler_;
 };
 
+}
+
+void syncSharedAccountText(QWidget* host, QLineEdit* source, const QString& text)
+{
+    if (!host) {
+        return;
+    }
+
+    const QString normalized = text.trimmed();
+    const QList<QLineEdit*> accountEdits = host->findChildren<QLineEdit*>(QStringLiteral("accountEdit"));
+    for (QLineEdit* edit : accountEdits) {
+        if (!edit || edit == source) {
+            continue;
+        }
+        const QSignalBlocker blocker(edit);
+        edit->setText(normalized);
+    }
 }
 
 AccountHistoryCombo::AccountHistoryCombo(Options options, QWidget* parent)

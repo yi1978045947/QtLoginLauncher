@@ -6,9 +6,7 @@
 #include <vector>
 
 #include <QPoint>
-#include <QPointer>
 #include <QString>
-#include <QVector>
 #include <QWidget>
 
 #include "client_config_model.h"
@@ -125,7 +123,6 @@ private:
     QString lastSubmittedPasswordAccount_;
     QString lastSubmittedPushAccount_;
     QString sharedAccountText_;
-    QVector<QPointer<QLineEdit>> sharedAccountEdits_;
     std::function<void(const LoginWindowResult&)> completionHandler_;
     std::unique_ptr<SdoBasePasswordAuthenticator> passwordAuthenticator_;
     QWidget* keyboardDialog_ = nullptr;
