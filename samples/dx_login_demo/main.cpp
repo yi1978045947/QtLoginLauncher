@@ -22,6 +22,8 @@ IDirect3DDevice9* g_device = nullptr;
 D3DPRESENT_PARAMETERS g_present = {};
 std::atomic_bool g_loginRunning = false;
 HWND g_mainWindow = nullptr;
+std::mutex g_loginThreadMutex;
+std::thread g_loginThread;
 
 std::mutex g_sdkMutex;
 HMODULE g_sdk = nullptr;
@@ -33,6 +35,10 @@ ISDOADx9* g_dx9 = nullptr;
 ISDOAApp2* g_sdoaApp = nullptr;
 ISDOLLogin7* g_loginExt = nullptr;
 bool g_sdkReady = false;
+
+void runSdoaLogin(HWND hwnd);
+void startLoginThread(HWND hwnd);
+bool stopLoginThreadForSdkUnload();
 
 using SetProcessDpiAwarenessContextFn = BOOL(WINAPI*)(HANDLE);
 using GetDpiForWindowFn = UINT(WINAPI*)(HWND);
@@ -211,6 +217,8 @@ void releaseDevice()
 
 void releaseSdkSession()
 {
+    const bool terminalAlreadyCalled = stopLoginThreadForSdkUnload();
+
     std::lock_guard<std::mutex> lock(g_sdkMutex);
     if (g_dx9) {
         g_dx9->Finalize();
@@ -225,7 +233,7 @@ void releaseSdkSession()
         g_loginExt->Release();
         g_loginExt = nullptr;
     }
-    if (g_igwTerminal) {
+    if (g_igwTerminal && !terminalAlreadyCalled) {
         g_igwTerminal();
     }
     if (g_sdk) {
@@ -354,6 +362,39 @@ void runSdoaLogin(HWND hwnd)
     g_loginRunning = false;
 }
 
+void startLoginThread(HWND hwnd)
+{
+    std::lock_guard<std::mutex> lock(g_loginThreadMutex);
+    if (g_loginRunning.load()) {
+        return;
+    }
+    if (g_loginThread.joinable()) {
+        g_loginThread.join();
+    }
+    g_loginThread = std::thread([hwnd]() { runSdoaLogin(hwnd); });
+}
+
+bool stopLoginThreadForSdkUnload()
+{
+    bool terminalCalled = false;
+    std::lock_guard<std::mutex> threadLock(g_loginThreadMutex);
+    if (g_loginRunning.load()) {
+        LPigwTerminal terminal = nullptr;
+        {
+            std::lock_guard<std::mutex> sdkLock(g_sdkMutex);
+            terminal = g_igwTerminal;
+        }
+        if (terminal) {
+            terminal();
+            terminalCalled = true;
+        }
+    }
+    if (g_loginThread.joinable()) {
+        g_loginThread.join();
+    }
+    return terminalCalled;
+}
+
 void createApiButtons(HWND hwnd)
 {
     CreateWindowExW(
@@ -390,7 +431,7 @@ void createApiButtons(HWND hwnd)
 void handleApiAction(HWND hwnd, qtlogin::samples::DxDemoApiAction action)
 {
     if (action == qtlogin::samples::DxDemoApiAction::ShowLoginDialog) {
-        std::thread([hwnd]() { runSdoaLogin(hwnd); }).detach();
+        startLoginThread(hwnd);
         return;
     }
 
@@ -519,20 +560,18 @@ LRESULT CALLBACK windowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
         return 0;
     case WM_KEYDOWN:
         if (wParam == 'L') {
-            std::thread([hwnd]() { runSdoaLogin(hwnd); }).detach();
+            startLoginThread(hwnd);
             return 0;
         }
         break;
     case WM_LBUTTONDBLCLK:
-        std::thread([hwnd]() { runSdoaLogin(hwnd); }).detach();
+        startLoginThread(hwnd);
         return 0;
     case WM_CLOSE:
         DestroyWindow(hwnd);
         return 0;
     case WM_DESTROY:
         KillTimer(hwnd, 1);
-        releaseSdkSession();
-        releaseDevice();
         PostQuitMessage(0);
         return 0;
     default:
@@ -589,7 +628,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
     ShowWindow(hwnd, showCommand);
     UpdateWindow(hwnd);
     if (behavior.autoShowLogin) {
-        std::thread([hwnd]() { runSdoaLogin(hwnd); }).detach();
+        startLoginThread(hwnd);
     }
 
     MSG msg{};
@@ -597,6 +636,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int showCommand)
         TranslateMessage(&msg);
         DispatchMessageW(&msg);
     }
+    releaseSdkSession();
+    releaseDevice();
     g_mainWindow = nullptr;
     return static_cast<int>(msg.wParam);
 }

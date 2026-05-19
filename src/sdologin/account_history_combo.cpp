@@ -8,12 +8,15 @@
 #include <QFrame>
 #include <QFontMetrics>
 #include <QMouseEvent>
+#include <QPainter>
+#include <QPaintEvent>
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QSignalBlocker>
 #include <QTimer>
 #include <QtGlobal>
 
+#include <functional>
 #include <utility>
 
 namespace qtlogin::sdologin {
@@ -34,17 +37,191 @@ QString editStyle(const QString& normalImage, const QString& focusImage)
         .arg(imageUrl(normalImage), imageUrl(focusImage));
 }
 
-void setButtonImages(QPushButton* button, const QString& normal, const QString& hover, const QString& pressed)
-{
-    QString style = QStringLiteral("QPushButton{border:0;border-image:%1;background:transparent;}").arg(imageUrl(normal));
-    if (!hover.isEmpty()) {
-        style += QStringLiteral("QPushButton:hover{border-image:%1;}").arg(imageUrl(hover));
+class AccountHistoryPopup final : public QFrame {
+public:
+    struct Item {
+        QString text;
+        std::wstring account;
+    };
+
+    explicit AccountHistoryPopup(QWidget* parent = nullptr)
+        : QFrame(parent)
+    {
+        setMouseTracking(true);
+        setAttribute(Qt::WA_StyledBackground, false);
+        setStyleSheet(QStringLiteral("background:transparent;border:0;"));
     }
-    if (!pressed.isEmpty()) {
-        style += QStringLiteral("QPushButton:pressed{border-image:%1;}").arg(imageUrl(pressed));
+
+    void configure(
+        std::vector<Item> items,
+        const QString& backgroundPath,
+        const QString& selectedPath,
+        const QString& deleteNormalPath,
+        const QString& deleteHoverPath,
+        const QString& deletePressedPath,
+        const QFont& popupFont,
+        int rowHeight,
+        std::function<void(const QString&)> selectHandler,
+        std::function<void(const std::wstring&)> removeHandler)
+    {
+        items_ = std::move(items);
+        background_ = QPixmap(backgroundPath);
+        selected_ = QPixmap(selectedPath);
+        deleteNormal_ = QPixmap(deleteNormalPath);
+        deleteHover_ = QPixmap(deleteHoverPath);
+        deletePressed_ = QPixmap(deletePressedPath);
+        popupFont_ = popupFont;
+        rowHeight_ = qMax(20, rowHeight);
+        selectHandler_ = std::move(selectHandler);
+        removeHandler_ = std::move(removeHandler);
+        hoveredRow_ = -1;
+        pressedRow_ = -1;
+        hoveredDelete_ = false;
+        pressedDelete_ = false;
+        update();
     }
-    button->setStyleSheet(style);
-}
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+        if (!background_.isNull()) {
+            painter.drawPixmap(rect(), background_);
+        } else {
+            painter.fillRect(rect(), QColor(105, 55, 16));
+        }
+
+        painter.setFont(popupFont_);
+        QFontMetrics metrics(popupFont_);
+        for (int i = 0; i < static_cast<int>(items_.size()); ++i) {
+            const QRect row = rowRect(i);
+            const bool highlighted = i == hoveredRow_ || i == pressedRow_;
+            if (highlighted) {
+                if (!selected_.isNull()) {
+                    painter.drawPixmap(row, selected_);
+                } else {
+                    painter.fillRect(row, QColor(120, 62, 18, 190));
+                }
+            }
+
+            painter.setPen(highlighted ? QColor(255, 255, 255) : QColor(255, 237, 220));
+            const QRect textRect = row.adjusted(10, 0, -rowHeight_, 0);
+            painter.drawText(
+                textRect,
+                Qt::AlignVCenter | Qt::AlignLeft,
+                metrics.elidedText(items_[static_cast<size_t>(i)].text, Qt::ElideRight, textRect.width()));
+
+            const QRect removeRect = deleteRect(i);
+            const QPixmap& removeIcon = (i == pressedRow_ && pressedDelete_)
+                ? deletePressed_
+                : ((i == hoveredRow_ && hoveredDelete_) ? deleteHover_ : deleteNormal_);
+            if (!removeIcon.isNull()) {
+                painter.drawPixmap(removeRect, removeIcon);
+            }
+        }
+    }
+
+    void mouseMoveEvent(QMouseEvent* event) override
+    {
+        const int row = rowAt(event->pos());
+        const bool overDelete = row >= 0 && deleteRect(row).contains(event->pos());
+        if (hoveredRow_ != row || hoveredDelete_ != overDelete) {
+            hoveredRow_ = row;
+            hoveredDelete_ = overDelete;
+            update();
+        }
+        setCursor(row >= 0 ? Qt::PointingHandCursor : Qt::ArrowCursor);
+        QFrame::mouseMoveEvent(event);
+    }
+
+    void leaveEvent(QEvent* event) override
+    {
+        hoveredRow_ = -1;
+        hoveredDelete_ = false;
+        pressedRow_ = -1;
+        pressedDelete_ = false;
+        unsetCursor();
+        update();
+        QFrame::leaveEvent(event);
+    }
+
+    void mousePressEvent(QMouseEvent* event) override
+    {
+        if (event->button() == Qt::LeftButton) {
+            pressedRow_ = rowAt(event->pos());
+            pressedDelete_ = pressedRow_ >= 0 && deleteRect(pressedRow_).contains(event->pos());
+            update();
+            event->accept();
+            return;
+        }
+        QFrame::mousePressEvent(event);
+    }
+
+    void mouseReleaseEvent(QMouseEvent* event) override
+    {
+        if (event->button() != Qt::LeftButton) {
+            QFrame::mouseReleaseEvent(event);
+            return;
+        }
+
+        const int row = rowAt(event->pos());
+        const bool removeClick = row >= 0 && row == pressedRow_ && pressedDelete_ && deleteRect(row).contains(event->pos());
+        const bool selectClick = row >= 0 && row == pressedRow_ && !pressedDelete_;
+        const QString selectedText = (row >= 0 && row < static_cast<int>(items_.size()))
+            ? items_[static_cast<size_t>(row)].text
+            : QString();
+        const std::wstring selectedAccount = (row >= 0 && row < static_cast<int>(items_.size()))
+            ? items_[static_cast<size_t>(row)].account
+            : std::wstring();
+
+        pressedRow_ = -1;
+        pressedDelete_ = false;
+        update();
+        event->accept();
+
+        if (removeClick && removeHandler_) {
+            removeHandler_(selectedAccount);
+        } else if (selectClick && selectHandler_) {
+            selectHandler_(selectedText);
+        }
+    }
+
+private:
+    QRect rowRect(int row) const
+    {
+        return QRect(2, 2 + row * rowHeight_, qMax(0, width() - 4), rowHeight_);
+    }
+
+    QRect deleteRect(int row) const
+    {
+        return QRect(width() - rowHeight_, 2 + row * rowHeight_ + 3, rowHeight_ - 6, rowHeight_ - 6);
+    }
+
+    int rowAt(const QPoint& pos) const
+    {
+        if (pos.x() < 2 || pos.x() >= width() - 2 || pos.y() < 2) {
+            return -1;
+        }
+        const int row = (pos.y() - 2) / rowHeight_;
+        return row >= 0 && row < static_cast<int>(items_.size()) && rowRect(row).contains(pos) ? row : -1;
+    }
+
+    std::vector<Item> items_;
+    QPixmap background_;
+    QPixmap selected_;
+    QPixmap deleteNormal_;
+    QPixmap deleteHover_;
+    QPixmap deletePressed_;
+    QFont popupFont_;
+    int rowHeight_ = 24;
+    int hoveredRow_ = -1;
+    int pressedRow_ = -1;
+    bool hoveredDelete_ = false;
+    bool pressedDelete_ = false;
+    std::function<void(const QString&)> selectHandler_;
+    std::function<void(const std::wstring&)> removeHandler_;
+};
 
 }
 
@@ -71,6 +248,15 @@ AccountHistoryCombo::AccountHistoryCombo(Options options, QWidget* parent)
     });
 
     layoutChildren();
+}
+
+AccountHistoryCombo::~AccountHistoryCombo()
+{
+    if (popup_) {
+        popup_->removeEventFilter(this);
+        delete popup_.data();
+        popup_ = nullptr;
+    }
 }
 
 QString AccountHistoryCombo::text() const
@@ -103,7 +289,7 @@ void AccountHistoryCombo::resizeEvent(QResizeEvent* event)
 
 bool AccountHistoryCombo::eventFilter(QObject* watched, QEvent* event)
 {
-    if (watched == popup_ && event->type() == QEvent::MouseButtonPress) {
+    if (watched == popup_.data() && event->type() == QEvent::MouseButtonPress) {
         auto* mouse = static_cast<QMouseEvent*>(event);
         if (!popup_->rect().contains(mouse->pos())) {
             hidePopup();
@@ -175,15 +361,10 @@ void AccountHistoryCombo::rebuildPopup()
         return;
     }
     if (!popup_) {
-        popup_ = new QFrame(host);
+        popup_ = new AccountHistoryPopup(host);
         popup_->setObjectName(QStringLiteral("accountHistoryPopup"));
         popup_->setAttribute(Qt::WA_StyledBackground, true);
         popup_->installEventFilter(this);
-    }
-
-    const auto children = popup_->findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly);
-    for (QWidget* child : children) {
-        delete child;
     }
 
     QFont popupFont = edit_ ? edit_->font() : font();
@@ -197,39 +378,29 @@ void AccountHistoryCombo::rebuildPopup()
     const int popupHeight = qMin(static_cast<int>(options_.accounts.size()) * rowHeight + 4, 10 * rowHeight + 4);
     popup_->resize(popupWidth, popupHeight);
     popup_->setFont(popupFont);
-    popup_->setStyleSheet(QStringLiteral(
-        "QFrame#accountHistoryPopup{border:0;border-image:%1;background:transparent;}"
-        "QPushButton[class=\"accountRow\"]{border:0;color:#ffeddc;background:transparent;text-align:left;padding-left:10px;padding-right:28px;}"
-        "QPushButton[class=\"accountRow\"]:hover{border-image:%2;color:#ffffff;}")
-        .arg(
-            imageUrl(skinPath(QStringLiteral("combobox/bg.png"))),
-            imageUrl(resolveSkinPath(QStringLiteral("combobox/itemselect.png"), QStringLiteral("combobox/select_item.png")))));
 
-    for (int i = 0; i < static_cast<int>(options_.accounts.size()); ++i) {
-        const auto account = options_.accounts[static_cast<size_t>(i)];
-        const int y = 2 + i * rowHeight;
-        auto* row = new QPushButton(QString::fromStdWString(account.name), popup_);
-        row->setProperty("class", QStringLiteral("accountRow"));
-        row->setGeometry(2, y, popupWidth - 4, rowHeight);
-        row->setFont(popupFont);
-        row->setCursor(Qt::PointingHandCursor);
-        connect(row, &QPushButton::clicked, this, [this, row]() {
-            selectAccount(row->text());
-        });
-
-        auto* remove = new QPushButton(popup_);
-        remove->setGeometry(popupWidth - rowHeight, y + 3, rowHeight - 6, rowHeight - 6);
-        remove->setCursor(Qt::PointingHandCursor);
-        remove->setFocusPolicy(Qt::NoFocus);
-        setButtonImages(remove,
-            resolveSkinPath(QStringLiteral("login/icon_delete_n.png"), QStringLiteral("combobox/delete_n.png")),
-            resolveSkinPath(QStringLiteral("login/icon_delete_o.png"), QStringLiteral("combobox/delete_o.png")),
-            resolveSkinPath(QStringLiteral("login/icon_delete_c.png"), QStringLiteral("combobox/delete_c.png")));
-        remove->raise();
-        connect(remove, &QPushButton::clicked, this, [this, account]() {
-            removeAccount(account.name);
-        });
+    std::vector<AccountHistoryPopup::Item> popupItems;
+    popupItems.reserve(options_.accounts.size());
+    for (const auto& account : options_.accounts) {
+        popupItems.push_back({QString::fromStdWString(account.name), account.name});
     }
+
+    auto* historyPopup = static_cast<AccountHistoryPopup*>(popup_.data());
+    historyPopup->configure(
+        std::move(popupItems),
+        skinPath(QStringLiteral("combobox/bg.png")),
+        resolveSkinPath(QStringLiteral("combobox/itemselect.png"), QStringLiteral("combobox/select_item.png")),
+        resolveSkinPath(QStringLiteral("login/icon_delete_n.png"), QStringLiteral("combobox/delete_n.png")),
+        resolveSkinPath(QStringLiteral("login/icon_delete_o.png"), QStringLiteral("combobox/delete_o.png")),
+        resolveSkinPath(QStringLiteral("login/icon_delete_c.png"), QStringLiteral("combobox/delete_c.png")),
+        popupFont,
+        rowHeight,
+        [this](const QString& account) {
+            selectAccount(account);
+        },
+        [this](const std::wstring& account) {
+            removeAccount(account);
+        });
 }
 
 void AccountHistoryCombo::schedulePopupRefresh()
@@ -278,8 +449,11 @@ void AccountHistoryCombo::removeAccount(const std::wstring& account)
         return;
     }
 
-    QTimer::singleShot(0, this, [removeHandler, account]() {
-        removeHandler(account);
+    QPointer<AccountHistoryCombo> guard(this);
+    QTimer::singleShot(0, this, [guard, removeHandler, account]() {
+        if (guard) {
+            removeHandler(account);
+        }
     });
 }
 

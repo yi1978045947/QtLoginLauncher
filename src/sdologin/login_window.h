@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <QPoint>
+#include <QPointer>
 #include <QString>
 #include <QWidget>
 
@@ -123,7 +124,7 @@ private:
     QString lastSubmittedPasswordAccount_;
     QString lastSubmittedPushAccount_;
     QString sharedAccountText_;
-    std::vector<QLineEdit*> sharedAccountEdits_;
+    std::vector<QPointer<QLineEdit>> sharedAccountEdits_;
     std::function<void(const LoginWindowResult&)> completionHandler_;
     std::unique_ptr<SdoBasePasswordAuthenticator> passwordAuthenticator_;
     QWidget* keyboardDialog_ = nullptr;

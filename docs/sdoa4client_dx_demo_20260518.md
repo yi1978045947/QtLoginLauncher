@@ -74,7 +74,21 @@ Minimal no-op compatibility was also added for `ISDOAAppUtils` and key/value sta
 6. Query `ISDOAApp2` with `igwGetModule`.
 7. Use `ISDOAApp2::ShowLoginDialog` for the main login button and auto-login path.
 8. Query `ISDOLLogin7` separately through `SDOLGetModule` only for extension buttons such as face verify, GhomePay, GetTicket, and the legacy login-window OpenWindow.
-9. On exit, call `ISDOADx9::Finalize`, release modules, then call `igwTerminal`.
+9. On exit, allow the main window message stack to unwind, then call `ISDOADx9::Finalize`, release modules, call `igwTerminal`, and unload the SDK DLL.
+
+`ShowLoginDialog` runs on one joinable worker thread. The demo no longer detaches login threads, because unloading
+`sdologinsdk.dll` while a detached thread is still inside `ISDOAApp::ShowLoginDialog` can crash in
+`sdologinsdk.dll_unloaded`. During shutdown the demo calls `igwTerminal`, waits for the login thread to return, and only
+then releases module pointers and calls `FreeLibrary`.
+
+2026-05-19 shutdown crash note:
+
+`ISDOADx9::Initialize(..., hookGameWnd=true)` installs a compatibility window procedure on the DX owner window so mouse
+input reaches the embedded Qt login child. If the demo calls `FreeLibrary(sdologinsdk.dll)` directly inside `WM_DESTROY`,
+the call stack can still be executing that SDK window procedure. Returning from the already-unloaded DLL produces the
+Windows event `dx_login_demo.exe / sdologinsdk.dll_unloaded / 0x000291f4`. The demo now only posts quit from
+`WM_DESTROY`; SDK terminal and `FreeLibrary` run after `GetMessage` exits, when the SDK window procedure has already
+returned and `WM_NCDESTROY` has restored the original owner window procedure.
 
 ## Demo buttons
 
@@ -117,3 +131,17 @@ Then run from `qtlogin_rewrite\build_qt5_32\bin\Debug`:
 .\sdologin_tests.exe
 .\sdk_module_tests.exe
 ```
+
+Additional shutdown verification used for the crash fix:
+
+```powershell
+$start=Get-Date
+$p=Start-Process .\qtlogin_rewrite\build_qt5_32\bin\Debug\dx_login_demo.exe -WorkingDirectory .\qtlogin_rewrite\build_qt5_32\bin\Debug -PassThru
+Start-Sleep -Seconds 8
+$p.CloseMainWindow()
+Start-Sleep -Seconds 5
+Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=$start} |
+  Where-Object { $_.Message -match 'sdologin|dx_login_demo|sdologinsdk|qtlogin_browser' }
+```
+
+Expected result: the demo exits with code 0 and no matching Windows Error Reporting/Application Error events are created.

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <QLineEdit>
+#include <QPointer>
 #include <QString>
 #include <QWidget>
 
@@ -25,6 +26,7 @@ public:
     };
 
     explicit AccountHistoryCombo(Options options, QWidget* parent = nullptr);
+    ~AccountHistoryCombo() override;
 
     QLineEdit* lineEdit() const { return edit_; }
     QString text() const;
@@ -50,7 +52,7 @@ private:
     Options options_;
     QLineEdit* edit_ = nullptr;
     QPushButton* dropButton_ = nullptr;
-    QFrame* popup_ = nullptr;
+    QPointer<QFrame> popup_;
     bool popupRefreshPending_ = false;
 };
 
