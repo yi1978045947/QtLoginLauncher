@@ -160,3 +160,31 @@ cmake --build .\qtlogin_rewrite\build_qt5_32 --config Debug --target DXLoginDemo
 .\qtlogin_rewrite\build_qt5_32\bin\Debug\account_history_combo_tests.exe
 .\qtlogin_rewrite\build_qt5_32\bin\Debug\sdologin_tests.exe
 ```
+
+2026-05-19 fourth delete crash follow-up:
+
+Root cause:
+
+- The latest dump at `2026-05-19 19:30` came from the rebuilt `sdologin.exe` and faulted in `std::_Atomic_storage<int>::load`.
+- Stack recovery from the minidump mapped the caller chain to:
+  - `AccountHistoryCombo::removeAccount`
+  - queued remove lambda
+  - `LoginWindow::removeHistoryAccount`
+  - `findChildren<AccountHistoryCombo*>()`
+  - `AccountHistoryCombo::setAccounts`
+- `AccountHistoryCombo` did not declare `Q_OBJECT`, so Qt's meta-object lookup for `findChildren<AccountHistoryCombo*>()` could match plain `QWidget` children and return unrelated controls as `AccountHistoryCombo*`.
+- Calling `setAccounts` on one of those misidentified widgets read arbitrary widget memory as the combo's `QVector<QString> accounts_`, which explains the crash in Qt/MSVC atomic reference-count loading.
+
+Fix:
+
+- Added `Q_OBJECT` to `AccountHistoryCombo`.
+- Added a regression assertion to `account_history_combo_tests` that places unrelated `QLabel` and `QLineEdit` children next to the combo and verifies `findChildren<AccountHistoryCombo*>()` returns exactly the real combo.
+
+Verification:
+
+```bat
+cmake --build .\qtlogin_rewrite\build_qt5_32 --config Debug --target sdologin DXLoginDemo sdk account_history_combo_tests sdologin_tests config_tests -- /m
+.\qtlogin_rewrite\build_qt5_32\bin\Debug\account_history_combo_tests.exe
+.\qtlogin_rewrite\build_qt5_32\bin\Debug\sdologin_tests.exe
+.\qtlogin_rewrite\build_qt5_32\bin\Debug\config_tests.exe
+```

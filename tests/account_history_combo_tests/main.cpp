@@ -5,6 +5,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFrame>
+#include <QLabel>
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QLineEdit>
@@ -46,6 +47,11 @@ int main(int argc, char** argv)
         QWidget host;
         host.resize(240, 120);
 
+        auto* unrelatedLabel = new QLabel(QStringLiteral("not a combo"), &host);
+        unrelatedLabel->setGeometry(0, 50, 80, 20);
+        auto* unrelatedEdit = new QLineEdit(&host);
+        unrelatedEdit->setGeometry(90, 50, 80, 20);
+
         qtlogin::sdologin::AccountHistoryCombo* combo = nullptr;
         bool removed = false;
 
@@ -65,6 +71,10 @@ int main(int argc, char** argv)
         combo->setGeometry(0, 0, 177, 29);
         host.show();
         QApplication::processEvents();
+
+        const auto accountCombos = host.findChildren<qtlogin::sdologin::AccountHistoryCombo*>();
+        assert(accountCombos.size() == 1);
+        assert(accountCombos.front() == combo);
 
         const auto buttons = combo->findChildren<QPushButton*>();
         assert(!buttons.empty());

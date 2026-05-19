@@ -18,6 +18,8 @@ namespace qtlogin::sdologin {
 void syncSharedAccountText(QWidget* host, QLineEdit* source, const QString& text);
 
 class AccountHistoryCombo final : public QWidget {
+    Q_OBJECT
+
 public:
     struct Options {
         QString skinRoot;
