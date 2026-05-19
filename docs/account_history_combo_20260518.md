@@ -144,3 +144,19 @@ Fix:
   - `popup_` is a raw pointer nulled by the popup `destroyed` signal.
   - Delayed account removal uses the login window as the `QTimer::singleShot` context, so Qt cancels the callback if the window is gone.
   - The queued callback captures a plain `std::wstring`, not a Qt weak pointer or live popup object.
+
+2026-05-19 clean rebuild verification:
+
+- A later crash dump at `2026-05-19 19:06` was produced by `sdologin.exe` built at `2026-05-19 17:21`.
+- Disassembly of that old binary still contained the removed `QPointer<QFrame>` path near the WER fault offset.
+- A `--clean-first` rebuild regenerated `sdologin.exe` at `2026-05-19 19:11`; disassembly of the new binary no longer contains `QPointer<QFrame>`.
+- The account dropdown delete regression test still passes after rebuilding the runtime and DX demo targets.
+
+Clean rebuild command used:
+
+```bat
+cmake --build .\qtlogin_rewrite\build_qt5_32 --config Debug --target sdologin --clean-first -- /m
+cmake --build .\qtlogin_rewrite\build_qt5_32 --config Debug --target DXLoginDemo sdk -- /m
+.\qtlogin_rewrite\build_qt5_32\bin\Debug\account_history_combo_tests.exe
+.\qtlogin_rewrite\build_qt5_32\bin\Debug\sdologin_tests.exe
+```
