@@ -16,6 +16,13 @@ namespace {
 
 constexpr wchar_t kWindowClass[] = L"QtLoginRewriteDx9DemoWindow";
 constexpr wchar_t kManualUrl[] = L"https://www.daoyu8.com/#/";
+constexpr wchar_t kPayQrUrl[] = L"https://cas.sdo.com/cas/login?gateway=true&service=http%3a%2f%2fqrcode.sdo.com%2fqrcode%2findex%3fappId%3d$gid$%26areaId%3d$gaid$";
+constexpr int kDefaultDemoAppId = 211;
+constexpr int kDefaultDemoAreaId = -1;
+constexpr int kDefaultDemoGroupId = -1;
+constexpr int kDemoTicketForAppId = 211;
+constexpr int kDemoDpi = 144;
+constexpr int kDemoDoubleLogin = 1;
 
 IDirect3D9* g_d3d = nullptr;
 IDirect3DDevice9* g_device = nullptr;
@@ -32,7 +39,8 @@ LPigwGetModule g_igwGetModule = nullptr;
 LPigwTerminal g_igwTerminal = nullptr;
 LPSDOLGetModule g_sdolGetModule = nullptr;
 ISDOADx9* g_dx9 = nullptr;
-ISDOAApp2* g_sdoaApp = nullptr;
+ISDOAApp4* g_sdoaApp = nullptr;
+ISDOAApp5* g_sdoaApp5 = nullptr;
 ISDOLLogin7* g_loginExt = nullptr;
 bool g_sdkReady = false;
 
@@ -72,6 +80,37 @@ std::wstring utf8ToWide(const char* value)
     return result;
 }
 
+std::wstring executableDirectory()
+{
+    wchar_t path[MAX_PATH] = {};
+    GetModuleFileNameW(nullptr, path, MAX_PATH);
+    wchar_t* lastSlash = wcsrchr(path, L'\\');
+    if (lastSlash) {
+        *lastSlash = L'\0';
+    }
+    return path;
+}
+
+int readDemoConfigInt(const wchar_t* key, int fallback)
+{
+    const std::wstring configPath = executableDirectory() + L"\\config.ini";
+    return static_cast<int>(GetPrivateProfileIntW(L"CONFIG", key, fallback, configPath.c_str()));
+}
+
+AppInfo makeDemoAppInfo(LPCWSTR appName, LPCWSTR appVersion)
+{
+    AppInfo appInfo{};
+    appInfo.cbSize = sizeof(appInfo);
+    appInfo.nAppID = readDemoConfigInt(L"appid", kDefaultDemoAppId);
+    appInfo.pwcsAppName = appName;
+    appInfo.pwcsAppVer = appVersion;
+    appInfo.nRenderType = SDOA_RENDERTYPE_D3D9;
+    appInfo.nMaxUser = 1;
+    appInfo.nAreaId = readDemoConfigInt(L"areaId", kDefaultDemoAreaId);
+    appInfo.nGroupId = readDemoConfigInt(L"groupId", kDefaultDemoGroupId);
+    return appInfo;
+}
+
 void setStatus(HWND hwnd, const std::wstring& text)
 {
     SetWindowTextW(hwnd, (L"DX9 SDK Demo - " + text + L" - Press L to login").c_str());
@@ -86,6 +125,28 @@ void showApiResult(HWND hwnd, const wchar_t* apiName, int code, const std::wstri
         message += detail;
     }
     MessageBoxW(hwnd, message.c_str(), L"DX demo SDK call", MB_OK | (code == 0 ? MB_ICONINFORMATION : MB_ICONWARNING));
+}
+
+void showTicketResult(HWND hwnd, const wchar_t* apiName, int code, BSTR ticket, BSTR sndaid)
+{
+    std::wstring detail;
+    if (ticket && SysStringLen(ticket) > 0) {
+        detail += L"ticket=";
+        detail += ticket;
+    } else {
+        detail += L"ticket=<empty>";
+    }
+    if (sndaid && SysStringLen(sndaid) > 0) {
+        detail += L"\r\nsndaid=";
+        detail += sndaid;
+    }
+    showApiResult(hwnd, apiName, code, detail);
+    if (ticket) {
+        SysFreeString(ticket);
+    }
+    if (sndaid) {
+        SysFreeString(sndaid);
+    }
 }
 
 double legacyDpiScaleForDemoWindow(HWND hwnd)
@@ -111,7 +172,7 @@ double legacyDpiScaleForDemoWindow(HWND hwnd)
 
 void positionLoginDialogForDemo(HWND hwnd)
 {
-    if (!g_loginExt) {
+    if (!g_sdoaApp) {
         return;
     }
     RECT client{};
@@ -120,7 +181,7 @@ void positionLoginDialogForDemo(HWND hwnd)
         client.right - client.left,
         client.bottom - client.top,
         legacyDpiScaleForDemoWindow(hwnd));
-    g_loginExt->MoveLoginDialog(position.x, position.y);
+    g_sdoaApp->MoveLoginDialog(position.x, position.y);
 }
 
 BOOL CALLBACK sdoaLoginCallback(int errorCode, const LoginResult* result, int, int)
@@ -155,7 +216,7 @@ int CALLBACK sdolLoginCallback(int errorCode, const SDOLLoginResult* result, int
 BOOL CALLBACK faceCallback(int errorCode, LPCSTR token)
 {
     if (g_mainWindow) {
-        showApiResult(g_mainWindow, L"ISDOLLogin7::OpenFaceVertifyDlg callback", errorCode, L"token=" + utf8ToWide(token));
+        showApiResult(g_mainWindow, L"OpenFaceVerify callback", errorCode, L"token=" + utf8ToWide(token));
     }
     return TRUE;
 }
@@ -163,7 +224,29 @@ BOOL CALLBACK faceCallback(int errorCode, LPCSTR token)
 BOOL CALLBACK payCallback(int errorCode, const char* message)
 {
     if (g_mainWindow) {
-        showApiResult(g_mainWindow, L"ISDOLLogin7::GhomePay callback", errorCode, L"message=" + utf8ToWide(message));
+        showApiResult(g_mainWindow, L"GhomePay callback", errorCode, L"message=" + utf8ToWide(message));
+    }
+    return TRUE;
+}
+
+BOOL CALLBACK collectCallback(int errorCode, LPCSTR message)
+{
+    if (g_mainWindow) {
+        showApiResult(g_mainWindow, L"OpenCollectUserMsg callback", errorCode, L"message=" + utf8ToWide(message));
+    }
+    return TRUE;
+}
+
+BOOL CALLBACK channelCallback(int errorCode, const GhomeChannelInfo* channelInfo)
+{
+    if (g_mainWindow) {
+        std::wstring detail;
+        if (channelInfo) {
+            detail += L"applicationChannel=" + utf8ToWide(channelInfo->szApplicationChannel);
+            detail += L"\r\nchannelCode=" + utf8ToWide(channelInfo->szChannelCode);
+            detail += L"\r\nadtraceId=" + utf8ToWide(channelInfo->szAdtraceId);
+        }
+        showApiResult(g_mainWindow, L"ISDOAApp4::GhomeGetCPSChannelInfo callback", errorCode, detail);
     }
     return TRUE;
 }
@@ -229,6 +312,10 @@ void releaseSdkSession()
         g_sdoaApp->Release();
         g_sdoaApp = nullptr;
     }
+    if (g_sdoaApp5) {
+        g_sdoaApp5->Release();
+        g_sdoaApp5 = nullptr;
+    }
     if (g_loginExt) {
         g_loginExt->Release();
         g_loginExt = nullptr;
@@ -271,15 +358,7 @@ bool ensureSdkSession(HWND hwnd)
         return false;
     }
 
-    AppInfo appInfo{};
-    appInfo.cbSize = sizeof(appInfo);
-    appInfo.nAppID = 1;
-    appInfo.pwcsAppName = L"DX9 Login Demo";
-    appInfo.pwcsAppVer = L"1.0.0";
-    appInfo.nRenderType = SDOA_RENDERTYPE_D3D9;
-    appInfo.nMaxUser = 1;
-    appInfo.nAreaId = -1;
-    appInfo.nGroupId = -1;
+    AppInfo appInfo = makeDemoAppInfo(L"Online", L"0.1.2.0");
 
     const int initCode = g_igwInitialize(SDOA_SDK_VERSION, &appInfo);
     if (initCode != SDOA_OK) {
@@ -298,14 +377,20 @@ bool ensureSdkSession(HWND hwnd)
     }
     g_dx9->Initialize(g_device, &g_present, true);
 
-    if (!g_igwGetModule(__uuidof(ISDOAApp2), reinterpret_cast<void**>(&g_sdoaApp)) || !g_sdoaApp) {
-        setStatus(hwnd, L"igwGetModule(ISDOAApp2) failed");
+    if (!g_igwGetModule(__uuidof(ISDOAApp4), reinterpret_cast<void**>(&g_sdoaApp)) || !g_sdoaApp) {
+        setStatus(hwnd, L"igwGetModule(ISDOAApp4) failed");
         g_dx9->Release();
         g_dx9 = nullptr;
         g_igwTerminal();
         FreeLibrary(g_sdk);
         g_sdk = nullptr;
         return false;
+    }
+    g_sdoaApp->SetOwnerWindow(hwnd);
+    g_sdoaApp->SetLoginMode(NormalLoginMode);
+
+    if (!g_igwGetModule(__uuidof(ISDOAApp5), reinterpret_cast<void**>(&g_sdoaApp5))) {
+        g_sdoaApp5 = nullptr;
     }
 
     if (g_sdolGetModule(__uuidof(ISDOLLogin7), reinterpret_cast<void**>(&g_loginExt)) == SDOL_ERRORCODE_OK && g_loginExt) {
@@ -440,6 +525,21 @@ void handleApiAction(HWND hwnd, qtlogin::samples::DxDemoApiAction action)
     }
 
     switch (action) {
+    case qtlogin::samples::DxDemoApiAction::SetLoginMode: {
+        const int code = g_sdoaApp->SetLoginMode(NormalLoginMode);
+        showApiResult(hwnd, L"ISDOAApp4::SetLoginMode", code, L"mode=NormalLoginMode(0)");
+        break;
+    }
+    case qtlogin::samples::DxDemoApiAction::SetOwnerWindow: {
+        const int code = g_sdoaApp->SetOwnerWindow(hwnd);
+        showApiResult(hwnd, L"ISDOAApp4::SetOwnerWindow", code, L"hwnd=DXLoginDemo");
+        break;
+    }
+    case qtlogin::samples::DxDemoApiAction::MoveLoginDialog: {
+        positionLoginDialogForDemo(hwnd);
+        showApiResult(hwnd, L"ISDOAApp4::MoveLoginDialog", 0, L"moved to demo right side");
+        break;
+    }
     case qtlogin::samples::DxDemoApiAction::Logout:
         g_sdoaApp->Logout();
         showApiResult(hwnd, L"ISDOAApp::Logout", 0);
@@ -450,17 +550,34 @@ void handleApiAction(HWND hwnd, qtlogin::samples::DxDemoApiAction action)
         break;
     }
     case qtlogin::samples::DxDemoApiAction::ModifyAppInfo: {
-        AppInfo appInfo{};
-        appInfo.cbSize = sizeof(appInfo);
-        appInfo.nAppID = 1;
-        appInfo.pwcsAppName = L"DX9 Login Demo Modified";
-        appInfo.pwcsAppVer = L"1.0.1";
-        appInfo.nRenderType = SDOA_RENDERTYPE_D3D9;
-        appInfo.nMaxUser = 1;
-        appInfo.nAreaId = -1;
-        appInfo.nGroupId = -1;
+        AppInfo appInfo = makeDemoAppInfo(L"Online Modified", L"0.1.2.1");
         g_sdoaApp->ModifyAppInfo(&appInfo);
-        showApiResult(hwnd, L"ISDOAApp::ModifyAppInfo", 0, L"AppVer=1.0.1");
+        showApiResult(hwnd, L"ISDOAApp::ModifyAppInfo", 0, L"AppVer=0.1.2.1");
+        break;
+    }
+    case qtlogin::samples::DxDemoApiAction::GetTicketForAppId: {
+        BSTR ticket = nullptr;
+        BSTR sndaid = nullptr;
+        const int code = g_sdoaApp->GetTicketForAppid(&ticket, &sndaid, kDemoTicketForAppId);
+        showTicketResult(hwnd, L"ISDOAApp3::GetTicketForAppid", code, ticket, sndaid);
+        break;
+    }
+    case qtlogin::samples::DxDemoApiAction::SetDoubleLogin: {
+        int code = g_sdoaApp->VertifyDoubleLogin(kDemoDoubleLogin);
+        if (code == SDOA_ERRORCODE_OK) {
+            code = g_sdoaApp->SetDoubleLoginCallBack(nullptr);
+        }
+        showApiResult(hwnd, L"ISDOAApp3::VertifyDoubleLogin", code, L"value=1");
+        break;
+    }
+    case qtlogin::samples::DxDemoApiAction::SetDpi: {
+        const int code = g_sdoaApp->SetDpiSetting(kDemoDpi);
+        showApiResult(hwnd, L"ISDOAApp4::SetDpiSetting", code, L"dpi=144");
+        break;
+    }
+    case qtlogin::samples::DxDemoApiAction::OpenPayQrWindow: {
+        const int code = g_sdoaApp->OpenWindow(L"", L"扫码支付", kPayQrUrl, 0, 0, 465, 500, L"center");
+        showApiResult(hwnd, L"ISDOAApp::OpenWindow PayQR", code, kPayQrUrl);
         break;
     }
     case qtlogin::samples::DxDemoApiAction::OpenWindow: {
@@ -484,44 +601,41 @@ void handleApiAction(HWND hwnd, qtlogin::samples::DxDemoApiAction action)
         break;
     }
     case qtlogin::samples::DxDemoApiAction::OpenFaceVerify:
-        if (g_loginExt) {
-            const int code = g_loginExt->OpenFaceVertifyDlg(&faceCallback, kManualUrl);
-            showApiResult(hwnd, L"ISDOLLogin7::OpenFaceVertifyDlg", code, kManualUrl);
+        if (g_sdoaApp5) {
+            const int code = g_sdoaApp5->OpenFaceVerifyDialog(&faceCallback, L"csblacklist");
+            showApiResult(hwnd, L"ISDOAApp5::OpenFaceVerifyDialog", code, L"verifyType=csblacklist");
         } else {
-            showApiResult(hwnd, L"ISDOLLogin7::OpenFaceVertifyDlg", SDOL_ERRORCODE_NOT_SUPPORT);
+            const int code = g_sdoaApp->OpenFaceVertifyDlg(&faceCallback, L"csblacklist");
+            showApiResult(hwnd, L"ISDOAApp3::OpenFaceVertifyDlg", code, L"verifyType=csblacklist");
+        }
+        break;
+    case qtlogin::samples::DxDemoApiAction::OpenFaceCollectMsg:
+        if (g_sdoaApp5) {
+            const int code = g_sdoaApp5->OpenCollectUserMsgDialog(&collectCallback, L"1013");
+            showApiResult(hwnd, L"ISDOAApp5::OpenCollectUserMsgDialog", code, L"collectMsgType=1013");
+        } else {
+            const int code = g_sdoaApp->OpenCollectUserMsgDlg(&collectCallback, L"1013");
+            showApiResult(hwnd, L"ISDOAApp3::OpenCollectUserMsgDlg", code, L"collectMsgType=1013");
         }
         break;
     case qtlogin::samples::DxDemoApiAction::GhomePay:
-        if (g_loginExt) {
-            const int code = g_loginExt->GhomePay("{\"url\":\"https://www.daoyu8.com/#/\",\"productid\":\"GWPAY-TEST\",\"areaid\":\"1\",\"groupid\":\"1\",\"gameorder\":\"ORDER-DEMO\"}", &payCallback);
-            showApiResult(hwnd, L"ISDOLLogin7::GhomePay", code);
-        } else {
-            showApiResult(hwnd, L"ISDOLLogin7::GhomePay", SDOL_ERRORCODE_NOT_SUPPORT);
+        {
+            const int code = g_sdoaApp->GhomePay("{\"areaid\":\"1\",\"productid\":\"GWPAY-791000855\",\"gameorder\":\"ORDER-DEMO\",\"extend\":\"test\",\"groupid\":\"1\"}", &payCallback);
+            showApiResult(hwnd, L"ISDOAApp4::GhomePay", code);
+        }
+        break;
+    case qtlogin::samples::DxDemoApiAction::GhomeGetChannelCode:
+        {
+            const int code = g_sdoaApp->GhomeGetCPSChannelInfo(&channelCallback);
+            showApiResult(hwnd, L"ISDOAApp4::GhomeGetCPSChannelInfo", code);
         }
         break;
     case qtlogin::samples::DxDemoApiAction::GetTicket:
-        if (g_loginExt) {
+        {
             BSTR ticket = nullptr;
             BSTR sndaid = nullptr;
-            const int code = g_loginExt->GetTicket(&ticket, &sndaid);
-            std::wstring detail;
-            if (ticket) {
-                detail += L"ticket=";
-                detail += ticket;
-            }
-            if (sndaid) {
-                detail += L"\r\nsndaid=";
-                detail += sndaid;
-            }
-            showApiResult(hwnd, L"ISDOLLogin7::GetTicket", code, detail);
-            if (ticket) {
-                SysFreeString(ticket);
-            }
-            if (sndaid) {
-                SysFreeString(sndaid);
-            }
-        } else {
-            showApiResult(hwnd, L"ISDOLLogin7::GetTicket", SDOL_ERRORCODE_NOT_SUPPORT);
+            const int code = g_sdoaApp->GetTicket(&ticket, &sndaid);
+            showTicketResult(hwnd, L"ISDOAApp3::GetTicket", code, ticket, sndaid);
         }
         break;
     case qtlogin::samples::DxDemoApiAction::IsdolOpenWindow:

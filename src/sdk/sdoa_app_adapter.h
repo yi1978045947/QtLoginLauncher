@@ -10,7 +10,7 @@
 
 namespace qtlogin::sdk {
 
-class SdoaAppAdapter final : public ISDOAApp2 {
+class SdoaAppAdapter final : public ISDOAApp4 {
 public:
     static SdoaAppAdapter& instance();
 
@@ -48,6 +48,33 @@ public:
     STDMETHOD_(int, SetWinProperty)(LPCWSTR winName, SDOAWinProperty* winProperty) override;
     STDMETHOD_(int, LoginDirect)(LPCSTR sessionId, LPCSTR additional, int reserved) override;
     STDMETHOD_(int, GetClientSignature)(LPCWSTR indication, BSTR* signature) override;
+    STDMETHOD_(int, LoginFeedback)(LPCWSTR sessionId, int result, int errorCode) override;
+    STDMETHOD_(int, OpenMatrixGamePay)() override;
+    STDMETHOD_(int, SetLoginDialogState)(int state) override;
+    STDMETHOD_(int, OpenActivityWindow)(LPCWSTR winType, LPCWSTR winName, LPCWSTR src, int left, int top, int width, int height, LPCWSTR mode) override;
+    STDMETHOD_(int, AuthCodeLogin)(LPLOGINAUTHCODECALLBACKPROC callback, LPCSTR authCode) override;
+    STDMETHOD_(int, GetTicket)(BSTR* ticket, BSTR* sndaid) override;
+    STDMETHOD_(int, OpenXinYouLoginIeAgain)() override;
+    STDMETHOD_(int, OpenXinIeWindow)(LPCWSTR winType, LPCWSTR winName, LPCWSTR src, int left, int top, int width, int height, LPCWSTR mode) override;
+    STDMETHOD(OnGameProc)(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* result) override;
+    STDMETHOD_(void*, OnGetSharedImage)() override;
+    STDMETHOD_(int, GetGameResolution)(GameSetResolution* resolution) override;
+    STDMETHOD_(int, RegisterPayEvent)(LPDRAGONLENOVOPAYWINDOWCLOSEDCALLBACKPROC callback) override;
+    STDMETHOD_(int, ShowDragonLenovoLoginDlg)(LPLOGINCALLBACKPROC callback, int userData, int reserved) override;
+    STDMETHOD_(int, AsyncShowDragonLenovoPayWindow)(LPCWSTR orderId, LPCWSTR productId, LPCWSTR groupId, LPCWSTR areaId, LPCWSTR roleId, LPCWSTR extend) override;
+    STDMETHOD_(int, GetTicketForAppid)(BSTR* ticket, BSTR* sndaid, int appId) override;
+    STDMETHOD_(int, VertifyDoubleLogin)(int isDoubleLogin) override;
+    STDMETHOD_(int, SetDoubleLoginCallBack)(LPDOUBLELOGINCALLBACKPROC callback) override;
+    STDMETHOD_(int, OpenFaceVertifyDlg)(LPFACEVERTIFYCALLBACKPROC callback, LPCWSTR verifyType) override;
+    STDMETHOD_(int, OpenCollectUserMsgDlg)(LPCOLLECTUSERMSGCALLBACKPROC callback, LPCWSTR collectMsgType) override;
+    STDMETHOD_(int, SetLoginMode)(int loginMode) override;
+    STDMETHOD_(int, GetAccountLoginState)(LPLOGINSTATCALLBACKPROC callback) override;
+    STDMETHOD_(int, SetOwnerWindow)(HWND hwnd) override;
+    STDMETHOD_(int, MoveLoginDialog)(int x, int y) override;
+    STDMETHOD_(int, SessionLoginGame)(LPLOGINGAMECALLBACKPROC callback, const AppInfo* appInfo) override;
+    STDMETHOD_(int, SetDpiSetting)(int dpi) override;
+    STDMETHOD_(int, GhomePay)(const char* extend, LPLOGINPAYCALLBACKPROC callback) override;
+    STDMETHOD_(int, GhomeGetCPSChannelInfo)(LPLOGINGETCHANNELCODECALLBACKPROC callback) override;
 
     int handleSdolLoginCallback(int errorCode, const SDOLLoginResult* result, int userData, int reserved);
 
@@ -63,6 +90,9 @@ private:
     bool screenEnabled_ = true;
     POINT taskBarPosition_{0, 0};
     bool focus_ = false;
+    int dpiSetting_ = 96;
+    bool doubleLoginEnabled_ = false;
+    LPDOUBLELOGINCALLBACKPROC doubleLoginCallback_ = nullptr;
     int taskBarMode_ = SDOA_BARMODE_ICONBOTTOM;
     int selfCursor_ = SDOA_CURSOR_AUTO;
     std::set<std::wstring> widgets_;
@@ -70,6 +100,20 @@ private:
     std::wstring roleName_;
     int roleSex_ = 0;
     LPLOGINCALLBACKPROC activeLoginCallback_ = nullptr;
+};
+
+class SdoaApp5Adapter final : public ISDOAApp5 {
+public:
+    static SdoaApp5Adapter& instance();
+
+    STDMETHOD(QueryInterface)(REFIID riid, void** object) override;
+    STDMETHOD_(ULONG, AddRef)() override;
+    STDMETHOD_(ULONG, Release)() override;
+    STDMETHOD_(int, OpenFaceVerifyDialog)(LPFACEVERTIFYCALLBACKPROC callback, LPCWSTR verifyType) override;
+    STDMETHOD_(int, OpenCollectUserMsgDialog)(LPCOLLECTUSERMSGCALLBACKPROC callback, LPCWSTR collectMsgType) override;
+
+private:
+    SdoaApp5Adapter() = default;
 };
 
 class SdoaAppUtilsAdapter final : public ISDOAAppUtils {

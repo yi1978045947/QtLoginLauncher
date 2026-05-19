@@ -1400,7 +1400,8 @@ void LoginWindow::removeHistoryAccount(const std::wstring& account)
         combo->setAccounts(context_.accountHistory);
     }
     if (sharedAccountText_.compare(QString::fromStdWString(account), Qt::CaseInsensitive) == 0) {
-        updateSharedAccountText(nullptr, QString::fromStdWString(preferredAccountHistoryText(context_.accountHistory)));
+        const std::wstring nextInput = accountInputTextAfterHistoryRemoval(sharedAccountText_.toStdWString(), context_.accountHistory);
+        updateSharedAccountText(nullptr, QString::fromStdWString(nextInput));
     }
 }
 

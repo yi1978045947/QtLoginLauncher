@@ -36,6 +36,9 @@ The previous `SDOLInitialize / SDOLGetModule / SDOLTerminal` exports are still p
 - `ISDOADx11`
 - `ISDOAApp`
 - `ISDOAApp2`
+- `ISDOAApp3`
+- `ISDOAApp4`
+- `ISDOAApp5`
 - `ISDOAAppUtils`
 - `ISDOAClientService`
 
@@ -46,7 +49,8 @@ The previous `SDOLInitialize / SDOLGetModule / SDOLTerminal` exports are still p
 
 ## ISDOAApp behavior
 
-`SdoaAppAdapter` bridges old `ISDOAApp/ISDOAApp2` calls onto the current Qt runtime.
+`SdoaAppAdapter` bridges old `ISDOAApp/ISDOAApp2/ISDOAApp3/ISDOAApp4` calls onto the current Qt runtime.
+`SdoaApp5Adapter` exposes the independent old face-verify interface.
 
 Implemented bridge behavior:
 
@@ -59,6 +63,14 @@ Implemented bridge behavior:
 - `OpenWidget / CloseWidget / WidgetExists` maintain simple compatibility state for manual/demo callers.
 - `LoginDirect` records a direct session in the runtime and marks the old login state as OK.
 - `GetClientSignature` returns a deterministic placeholder signature for ABI compatibility.
+- `ISDOAApp3::GetTicket / GetTicketForAppid` return the runtime ticket cache filled after login/direct-login.
+- `ISDOAApp3::VertifyDoubleLogin / SetDoubleLoginCallBack` keep compatibility state for old 2P-login callers.
+- `ISDOAApp3::OpenFaceVertifyDlg / OpenCollectUserMsgDlg` delegate to the same browser/runtime hooks used by the newer extension interface.
+- `ISDOAApp4::SetLoginMode / SetOwnerWindow / MoveLoginDialog` call the shared `SdkRuntime`, so DX callers can embed and move the Qt login panel through the old SDOA path.
+- `ISDOAApp4::SetDpiSetting` accepts the old DPI integer and stores it as compatibility state.
+- `ISDOAApp4::GhomePay` delegates to the runtime unified cashier flow.
+- `ISDOAApp4::GhomeGetCPSChannelInfo` returns a deterministic compatibility channel callback for callers that expect the method to exist.
+- `ISDOAApp5::OpenFaceVerifyDialog / OpenCollectUserMsgDialog` expose the new independent face/collection methods referenced by the old demo.
 
 Minimal no-op compatibility was also added for `ISDOAAppUtils` and key/value state for `ISDOAClientService`.
 
@@ -71,9 +83,11 @@ Minimal no-op compatibility was also added for `ISDOAAppUtils` and key/value sta
 3. Call `igwInitialize(SDOA_SDK_VERSION, &AppInfo)`.
 4. Query `ISDOADx9` with `igwGetModule`.
 5. Call `ISDOADx9::Initialize(device, presentParams, true)`.
-6. Query `ISDOAApp2` with `igwGetModule`.
-7. Use `ISDOAApp2::ShowLoginDialog` for the main login button and auto-login path.
-8. Query `ISDOLLogin7` separately through `SDOLGetModule` only for extension buttons such as face verify, GhomePay, GetTicket, and the legacy login-window OpenWindow.
+6. Query `ISDOAApp4` with `igwGetModule`.
+7. Call `ISDOAApp4::SetOwnerWindow(hwnd)` and `ISDOAApp4::SetLoginMode(NormalLoginMode)`, matching the old `CLauncher::SetHwnd / SetLoginMode` pattern.
+8. Query `ISDOAApp5` with `igwGetModule` for the independent face-verify/collection methods.
+9. Use `ISDOAApp4::ShowLoginDialog` for the main login button and auto-login path.
+10. Query `ISDOLLogin7` separately through `SDOLGetModule` only for the explicit "ISDOL OpenWindow" extension button.
 9. On exit, allow the main window message stack to unwind, then call `ISDOADx9::Finalize`, release modules, call `igwTerminal`, and unload the SDK DLL.
 
 `ShowLoginDialog` runs on one joinable worker thread. The demo no longer detaches login threads, because unloading
@@ -95,19 +109,41 @@ returned and `WM_NCDESTROY` has restored the original owner window procedure.
 The DX demo now creates native Win32 buttons for manual API checks:
 
 - `ShowLoginDialog`
+- `SetLoginMode`
+- `SetOwnerWindow`
+- `MoveLoginDialog`
 - `Logout`
 - `GetLoginState`
 - `ModifyAppInfo`
+- `GetTicketForAppid`
+- `SetDoubleLogin`
+- `SetDpi(144)`
+- `OpenPayQR`
 - `OpenWindow`
 - `Payment`
 - `OpenWidget`
 - `CloseWidget`
 - `FaceVerify`
+- `FaceCollect`
 - `GhomePay`
+- `ChannelInfo`
 - `GetTicket`
 - `ISDOL OpenWindow`
 
-The first eight use old `ISDOAApp/ISDOAApp2` where applicable. The last extension operations use `ISDOLLogin7` intentionally, so the demo clearly separates old DX/game integration from login-extension APIs.
+All DX-facing buttons except `ISDOL OpenWindow` use `ISDOAApp4` or `ISDOAApp5`.
+`ISDOL OpenWindow` remains as a clearly separated extension-interface check.
+
+The hardcoded demo parameters mirror `E:\AllLoginDemo\DirectX3D\DirectX3D`:
+
+- `AppInfo`: reads `[CONFIG] appid / areaId / groupId` from `config.ini` next to `dx_login_demo.exe`; defaults are `appid=211`, `areaId=-1`, `groupId=-1`.
+- `AppName/AppVer`: `Online / 0.1.2.0`, with `ModifyAppInfo` changing version to `0.1.2.1`.
+- `GetTicketForAppid`: uses app id `211`.
+- `SetDoubleLogin`: sends `1`.
+- `SetDpi`: sends `144`.
+- `OpenPayQR`: uses the old QR cashier URL and opens `465x500` centered.
+- `FaceVerify`: uses `csblacklist`.
+- `FaceCollect`: uses `1013`.
+- `GhomePay`: sends `{"areaid":"1","productid":"GWPAY-791000855","gameorder":"ORDER-DEMO","extend":"test","groupid":"1"}`.
 
 ## Embedded login position
 
@@ -115,14 +151,31 @@ The demo keeps the API buttons on the left side and moves the embedded Qt login 
 
 The position is calculated by `dxDemoLoginDialogPosition(clientWidth, clientHeight, legacyDpiScale)` in `samples/dx_login_demo/dx_demo_behavior.cpp`.
 
-`DXLoginDemo` applies that position with `ISDOLLogin7::MoveLoginDialog` before the SDOA login call. This keeps the public DX path as `igw* + ISDOAApp`, while using the existing login-extension method only to pass the embedded-window position to the shared runtime.
+`DXLoginDemo` applies that position with `ISDOAApp4::MoveLoginDialog` before the SDOA login call, so the visible DX demo path is now consistently `igw* + ISDOADx9 + ISDOAApp4`.
+
+## 2026-05-19 extended SDOA4 demo alignment
+
+The Qt demo was aligned with `E:\AllLoginDemo\DirectX3D\DirectX3D\Launcher.cpp` and `DirectX3dDlg.cpp`:
+
+- Old `CLauncher::Initial(appid, areaId, groupId)` maps to `makeDemoAppInfo` plus `igwInitialize`.
+- Old `CLauncher::SetHwnd / SetLoginMode / Move` map to `ISDOAApp4::SetOwnerWindow / SetLoginMode / MoveLoginDialog`.
+- Old `GetTicket / GetTicket(appId)` map to `ISDOAApp3::GetTicket / GetTicketForAppid`.
+- Old `SetDoubleLogin / SetDpi` map to `ISDOAApp3::VertifyDoubleLogin` and `ISDOAApp4::SetDpiSetting`.
+- Old `OpenFaceVertify / OpenFaceCollectMsg` prefer `ISDOAApp5`, falling back to the older `ISDOAApp3` methods if needed.
+- Old `PaymentUrl` maps to `ISDOAApp4::GhomePay`.
+- Old `GetChannelCode` maps to `ISDOAApp4::GhomeGetCPSChannelInfo`.
+
+Regression coverage:
+
+- `sdk_module_tests` probes `igwGetModule(ISDOAApp4)` and `igwGetModule(ISDOAApp5)`, then calls SetLoginMode, SetOwnerWindow, MoveLoginDialog, VertifyDoubleLogin, SetDpiSetting, GhomePay, GhomeGetCPSChannelInfo, OpenFaceVerifyDialog, and OpenCollectUserMsgDialog.
+- `sdologin_tests` verifies the expanded DX demo button/action mapping.
 
 ## Verification
 
 Run from `F:\vs2019_code\Launcher\Release\测试\loginCode\QTLogin`:
 
 ```powershell
-cmake --build .\qtlogin_rewrite\build_qt5_32 --config Debug --target DXLoginDemo sdologin_tests sdk_module_tests
+cmake --build .\qtlogin_rewrite\build_qt5_32 --config Debug --target DXLoginDemo sdk sdologin_tests sdk_module_tests account_history_combo_tests -- /m
 ```
 
 Then run from `qtlogin_rewrite\build_qt5_32\bin\Debug`:

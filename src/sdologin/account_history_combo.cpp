@@ -394,9 +394,6 @@ void AccountHistoryCombo::togglePopup()
 
 void AccountHistoryCombo::showPopup()
 {
-    if (accounts_.isEmpty()) {
-        return;
-    }
     rebuildPopup();
     if (!popup_) {
         return;
@@ -440,7 +437,8 @@ void AccountHistoryCombo::rebuildPopup()
     const QFontMetrics metrics(popupFont);
     const int rowHeight = qMax(qMax(24, height()), metrics.height() + 12);
     const int popupWidth = width();
-    const int popupHeight = qMin(accounts_.size() * rowHeight + 4, 10 * rowHeight + 4);
+    const int visibleRowCount = qMax(1, accounts_.size());
+    const int popupHeight = qMin(visibleRowCount * rowHeight + 4, 10 * rowHeight + 4);
     popup_->resize(popupWidth, popupHeight);
     popup_->setFont(popupFont);
 
@@ -473,10 +471,6 @@ void AccountHistoryCombo::schedulePopupRefresh()
     if (!popup_ || !popup_->isVisible()) {
         return;
     }
-    if (accounts_.isEmpty()) {
-        hidePopup();
-        return;
-    }
     if (popupRefreshPending_) {
         return;
     }
@@ -485,10 +479,6 @@ void AccountHistoryCombo::schedulePopupRefresh()
     QTimer::singleShot(0, this, [this]() {
         popupRefreshPending_ = false;
         if (!popup_ || !popup_->isVisible()) {
-            return;
-        }
-        if (accounts_.isEmpty()) {
-            hidePopup();
             return;
         }
         rebuildPopup();

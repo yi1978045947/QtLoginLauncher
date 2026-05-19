@@ -101,6 +101,28 @@ struct LoginMessage {
     BSTR* pbstrContent;
 };
 
+struct GameSetResolution {
+    bool full_screen;
+    int width;
+    int height;
+};
+
+struct LoginResultDoubleLogin {
+    DWORD cbSize;
+    LPCSTR szSessionId;
+    LPCSTR szSndaid;
+    LPCSTR szIdentityState;
+    LPCSTR szAppendix;
+    LPCSTR szAdditional;
+    LPCSTR szSessionIdDoubleLogin;
+};
+
+struct GhomeChannelInfo {
+    LPCSTR szApplicationChannel;
+    LPCSTR szChannelCode;
+    LPCSTR szAdtraceId;
+};
+
 #define SDOA_ERRORCODE_OK 0
 #define SDOA_ERRORCODE_CANCEL -1
 #define SDOA_ERRORCODE_UILOST -2
@@ -112,6 +134,15 @@ struct LoginMessage {
 #define SDOA_ERRORCODE_SHOWMESSAGE -10
 
 typedef BOOL(CALLBACK* LPLOGINCALLBACKPROC)(int nErrorCode, const LoginResult* pLoginResult, int nUserData, int nReserved);
+typedef BOOL(CALLBACK* LPDOUBLELOGINCALLBACKPROC)(int nErrorCode, const LoginResultDoubleLogin* pLoginResult, int nUserData, int nReserved);
+typedef BOOL(CALLBACK* LPLOGINAUTHCODECALLBACKPROC)(int nErrorCode, LPCSTR ticket);
+typedef BOOL(CALLBACK* LPFACEVERTIFYCALLBACKPROC)(int nErrorCode, LPCSTR token);
+typedef BOOL(CALLBACK* LPCOLLECTUSERMSGCALLBACKPROC)(int nErrorCode, LPCSTR resultMsg);
+typedef BOOL(CALLBACK* LPLOGINSTATCALLBACKPROC)(int nErrorCode);
+typedef BOOL(CALLBACK* LPLOGINGAMECALLBACKPROC)(int nErrorCode, const LoginResult* pLoginResult);
+typedef BOOL(CALLBACK* LPLOGINPAYCALLBACKPROC)(int nErrorCode, const char* errorMsg);
+typedef BOOL(CALLBACK* LPLOGINGETCHANNELCODECALLBACKPROC)(int nErrorCode, const GhomeChannelInfo* pGhomeChannelInfo);
+typedef int(CALLBACK* LPDRAGONLENOVOPAYWINDOWCLOSEDCALLBACKPROC)();
 
 typedef interface ISDOAApp ISDOAApp;
 typedef ISDOAApp* PSDOAApp;
@@ -159,6 +190,62 @@ ISDOAApp2 : public ISDOAApp {
 public:
     STDMETHOD_(int, LoginDirect)(THIS_ LPCSTR szSessionId, LPCSTR szAdditional, int nReserved) PURE;
     STDMETHOD_(int, GetClientSignature)(THIS_ LPCWSTR szIndication, BSTR* Signature) PURE;
+};
+
+typedef interface ISDOAApp3 ISDOAApp3;
+typedef ISDOAApp3* PSDOAApp3;
+typedef ISDOAApp3* LPSDOAApp3;
+
+MIDL_INTERFACE("7814A3D2-3625-4585-8CA7-072CA295ECE7")
+ISDOAApp3 : public ISDOAApp2 {
+public:
+    STDMETHOD_(int, LoginFeedback)(THIS_ LPCWSTR szSessionId, int result, int errorCode) PURE;
+    STDMETHOD_(int, OpenMatrixGamePay)(THIS) PURE;
+    STDMETHOD_(int, SetLoginDialogState)(THIS_ int nState) PURE;
+    STDMETHOD_(int, OpenActivityWindow)(THIS_ LPCWSTR pwcsWinType, LPCWSTR pwcsWinName, LPCWSTR pwcsSrc, int nLeft, int nTop, int nWidth, int nHeight, LPCWSTR pwcsMode) PURE;
+    STDMETHOD_(int, AuthCodeLogin)(THIS_ LPLOGINAUTHCODECALLBACKPROC fnCallback, LPCSTR authCode) PURE;
+    STDMETHOD_(int, GetTicket)(THIS_ BSTR* bstrTicket, BSTR* bstrSndaid) PURE;
+    STDMETHOD_(int, OpenXinYouLoginIeAgain)(THIS) PURE;
+    STDMETHOD_(int, OpenXinIeWindow)(THIS_ LPCWSTR pwcsWinType, LPCWSTR pwcsWinName, LPCWSTR pwcsSrc, int nLeft, int nTop, int nWidth, int nHeight, LPCWSTR pwcsMode) PURE;
+    STDMETHOD(OnGameProc)(THIS_ HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT* lResult) PURE;
+    STDMETHOD_(void*, OnGetSharedImage)(THIS) PURE;
+    STDMETHOD_(int, GetGameResolution)(THIS_ GameSetResolution* pGameSetResolution) PURE;
+    STDMETHOD_(int, RegisterPayEvent)(THIS_ LPDRAGONLENOVOPAYWINDOWCLOSEDCALLBACKPROC fnCallback) PURE;
+    STDMETHOD_(int, ShowDragonLenovoLoginDlg)(THIS_ LPLOGINCALLBACKPROC fnCallback, int nUserData, int nReserved) PURE;
+    STDMETHOD_(int, AsyncShowDragonLenovoPayWindow)(THIS_ LPCWSTR szOrderId, LPCWSTR szProductId, LPCWSTR szGroupId, LPCWSTR szAreaId, LPCWSTR szRoleId, LPCWSTR szExtend) PURE;
+    STDMETHOD_(int, GetTicketForAppid)(THIS_ BSTR* bstrTicket, BSTR* bstrSndaid, int appId) PURE;
+    STDMETHOD_(int, VertifyDoubleLogin)(THIS_ int isDoubleLogin) PURE;
+    STDMETHOD_(int, SetDoubleLoginCallBack)(THIS_ LPDOUBLELOGINCALLBACKPROC fnCallback) PURE;
+    STDMETHOD_(int, OpenFaceVertifyDlg)(THIS_ LPFACEVERTIFYCALLBACKPROC fnCallback, LPCWSTR szVertifyType) PURE;
+    STDMETHOD_(int, OpenCollectUserMsgDlg)(THIS_ LPCOLLECTUSERMSGCALLBACKPROC fnCallback, LPCWSTR szCollectMsgType) PURE;
+};
+
+typedef interface ISDOAApp4 ISDOAApp4;
+typedef ISDOAApp4* PSDOAApp4;
+typedef ISDOAApp4* LPSDOAApp4;
+
+MIDL_INTERFACE("15B0B068-A577-4695-A1C9-16F87F765A07")
+ISDOAApp4 : public ISDOAApp3 {
+public:
+    STDMETHOD_(int, SetLoginMode)(THIS_ int nLoginMode) PURE;
+    STDMETHOD_(int, GetAccountLoginState)(THIS_ LPLOGINSTATCALLBACKPROC fnCallback) PURE;
+    STDMETHOD_(int, SetOwnerWindow)(THIS_ HWND hWnd) PURE;
+    STDMETHOD_(int, MoveLoginDialog)(THIS_ int x, int y) PURE;
+    STDMETHOD_(int, SessionLoginGame)(THIS_ LPLOGINGAMECALLBACKPROC fnCallback, const AppInfo* pAppInfo) PURE;
+    STDMETHOD_(int, SetDpiSetting)(THIS_ int dpi) PURE;
+    STDMETHOD_(int, GhomePay)(THIS_ const char* extend, LPLOGINPAYCALLBACKPROC fnCallback) PURE;
+    STDMETHOD_(int, GhomeGetCPSChannelInfo)(THIS_ LPLOGINGETCHANNELCODECALLBACKPROC fnCallback) PURE;
+};
+
+typedef interface ISDOAApp5 ISDOAApp5;
+typedef ISDOAApp5* PSDOAApp5;
+typedef ISDOAApp5* LPSDOAApp5;
+
+MIDL_INTERFACE("CD997351-C50F-4602-995E-E8B3DD890EB8")
+ISDOAApp5 : public IUnknown {
+public:
+    STDMETHOD_(int, OpenFaceVerifyDialog)(THIS_ LPFACEVERTIFYCALLBACKPROC fnCallback, LPCWSTR szVerifyType) PURE;
+    STDMETHOD_(int, OpenCollectUserMsgDialog)(THIS_ LPCOLLECTUSERMSGCALLBACKPROC fnCallback, LPCWSTR szCollectMsgType) PURE;
 };
 
 typedef DWORD(CALLBACK* LPGETAUDIOSOUNDVOLUME)();

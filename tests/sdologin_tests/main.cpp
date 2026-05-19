@@ -281,11 +281,19 @@ int main()
     assert(failedCallbackMessage.find(L"Login callback error") != std::wstring::npos);
     assert(failedCallbackMessage.find(L"errorCode=-1") != std::wstring::npos);
     const auto& dxButtons = qtlogin::samples::dxDemoApiButtons();
-    assert(dxButtons.size() == 12);
+    assert(dxButtons.size() >= 20);
     assert(dxButtons[0].action == qtlogin::samples::DxDemoApiAction::ShowLoginDialog);
     assert(std::wstring(dxButtons[0].text) == L"ShowLoginDialog");
-    assert(dxButtons[8].action == qtlogin::samples::DxDemoApiAction::OpenFaceVerify);
-    assert(dxButtons[9].action == qtlogin::samples::DxDemoApiAction::GhomePay);
+    assert(dxButtons[1].action == qtlogin::samples::DxDemoApiAction::SetLoginMode);
+    assert(dxButtons[2].action == qtlogin::samples::DxDemoApiAction::SetOwnerWindow);
+    assert(dxButtons[3].action == qtlogin::samples::DxDemoApiAction::MoveLoginDialog);
+    assert(dxButtons[7].action == qtlogin::samples::DxDemoApiAction::GetTicketForAppId);
+    assert(dxButtons[8].action == qtlogin::samples::DxDemoApiAction::SetDoubleLogin);
+    assert(dxButtons[9].action == qtlogin::samples::DxDemoApiAction::SetDpi);
+    assert(dxButtons[14].action == qtlogin::samples::DxDemoApiAction::OpenFaceVerify);
+    assert(dxButtons[15].action == qtlogin::samples::DxDemoApiAction::OpenFaceCollectMsg);
+    assert(dxButtons[16].action == qtlogin::samples::DxDemoApiAction::GhomePay);
+    assert(dxButtons[17].action == qtlogin::samples::DxDemoApiAction::GhomeGetChannelCode);
     assert(dxButtons.back().action == qtlogin::samples::DxDemoApiAction::IsdolOpenWindow);
     const qtlogin::samples::DxDemoPoint rightLogin =
         qtlogin::samples::dxDemoLoginDialogPosition(1280, 720, 1.5);
@@ -416,6 +424,8 @@ int main()
     const auto accountHistoryAfterRemove = qtlogin::sdologin::removeAccountHistoryEntry(accountHistory, L"LATEST-USER");
     assert(accountHistoryAfterRemove.size() == 1);
     assert(accountHistoryAfterRemove.front().name == L"old-user");
+    assert(qtlogin::sdologin::accountInputTextAfterHistoryRemoval(L"latest-user", accountHistoryAfterRemove) == L"latest-user");
+    assert(qtlogin::sdologin::accountInputTextAfterHistoryRemoval(L"", accountHistoryAfterRemove) == L"old-user");
     assert(qtlogin::sdologin::shouldRefreshAccountHistoryUiAfterRecord(false));
     assert(!qtlogin::sdologin::shouldRefreshAccountHistoryUiAfterRecord(true));
     assert(qtlogin::sdologin::shouldQueueAccountHistoryRemoveFromPopupClick());

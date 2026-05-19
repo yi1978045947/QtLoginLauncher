@@ -138,6 +138,30 @@ int main(int argc, char** argv)
         QWidget host;
         host.resize(240, 120);
 
+        qtlogin::sdologin::AccountHistoryCombo::Options options;
+        options.skinRoot = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("skin"));
+        options.placeholder = QStringLiteral("account");
+        options.popupFontPixelSize = 18;
+
+        auto* combo = new qtlogin::sdologin::AccountHistoryCombo(std::move(options), &host);
+        combo->setGeometry(0, 0, 177, 29);
+        host.show();
+        QApplication::processEvents();
+
+        const auto buttons = combo->findChildren<QPushButton*>();
+        assert(!buttons.empty());
+        sendLeftClick(buttons.front(), buttons.front()->rect().center());
+
+        auto* popup = host.findChild<QFrame*>(QStringLiteral("accountHistoryPopup"));
+        assert(popup);
+        assert(popup->isVisible());
+        assert(popup->height() >= combo->height());
+    }
+
+    {
+        QWidget host;
+        host.resize(240, 120);
+
         auto* firstEdit = new QLineEdit(&host);
         firstEdit->setObjectName(QStringLiteral("accountEdit"));
         firstEdit->setText(QStringLiteral("source"));

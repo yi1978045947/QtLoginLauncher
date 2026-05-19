@@ -37,6 +37,13 @@ std::vector<qtlogin::config::ConfigManager::UserAccountEntry> removeAccountHisto
     return filtered;
 }
 
+std::wstring accountInputTextAfterHistoryRemoval(
+    const std::wstring& currentInput,
+    const std::vector<qtlogin::config::ConfigManager::UserAccountEntry>& remainingAccounts)
+{
+    return currentInput.empty() ? preferredAccountHistoryText(remainingAccounts) : currentInput;
+}
+
 bool shouldRefreshAccountHistoryUiAfterRecord(bool loginWindowCompleting)
 {
     return !loginWindowCompleting;

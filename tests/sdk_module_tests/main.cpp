@@ -71,6 +71,66 @@ struct __declspec(uuid("3F35136C-7061-4E69-BF3A-CC78D026F48F")) ISDOAApp2AbiProb
     virtual int STDMETHODCALLTYPE GetClientSignature(LPCWSTR indication, BSTR* signature) = 0;
 };
 
+typedef BOOL(CALLBACK* LPLOGINSTATCALLBACKPROBE)(int);
+typedef BOOL(CALLBACK* LPLOGINGAMECALLBACKPROBE)(int, const LoginResultAbiProbe*);
+typedef BOOL(CALLBACK* LPLOGINAUTHCODECALLBACKPROBE)(int, LPCSTR);
+typedef BOOL(CALLBACK* LPDOUBLELOGINCALLBACKPROBE)(int, const void*, int, int);
+typedef BOOL(CALLBACK* LPFACEVERTIFYCALLBACKPROBE)(int, LPCSTR);
+typedef BOOL(CALLBACK* LPCOLLECTUSERMSGCALLBACKPROBE)(int, LPCSTR);
+typedef BOOL(CALLBACK* LPLOGINPAYCALLBACKPROBE)(int, const char*);
+
+struct GhomeChannelInfoAbiProbe {
+    LPCSTR szApplicationChannel;
+    LPCSTR szChannelCode;
+    LPCSTR szAdtraceId;
+};
+
+typedef BOOL(CALLBACK* LPLOGINGETCHANNELCODECALLBACKPROBE)(int, const GhomeChannelInfoAbiProbe*);
+
+struct GameSetResolutionAbiProbe {
+    bool full_screen;
+    int width;
+    int height;
+};
+
+struct __declspec(uuid("7814A3D2-3625-4585-8CA7-072CA295ECE7")) ISDOAApp3AbiProbe : ISDOAApp2AbiProbe {
+    virtual int STDMETHODCALLTYPE LoginFeedback(LPCWSTR sessionId, int result, int errorCode) = 0;
+    virtual int STDMETHODCALLTYPE OpenMatrixGamePay() = 0;
+    virtual int STDMETHODCALLTYPE SetLoginDialogState(int state) = 0;
+    virtual int STDMETHODCALLTYPE OpenActivityWindow(LPCWSTR winType, LPCWSTR winName, LPCWSTR src, int left, int top, int width, int height, LPCWSTR mode) = 0;
+    virtual int STDMETHODCALLTYPE AuthCodeLogin(LPLOGINAUTHCODECALLBACKPROBE callback, LPCSTR authCode) = 0;
+    virtual int STDMETHODCALLTYPE GetTicket(BSTR* ticket, BSTR* sndaid) = 0;
+    virtual int STDMETHODCALLTYPE OpenXinYouLoginIeAgain() = 0;
+    virtual int STDMETHODCALLTYPE OpenXinIeWindow(LPCWSTR winType, LPCWSTR winName, LPCWSTR src, int left, int top, int width, int height, LPCWSTR mode) = 0;
+    virtual HRESULT STDMETHODCALLTYPE OnGameProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* result) = 0;
+    virtual void* STDMETHODCALLTYPE OnGetSharedImage() = 0;
+    virtual int STDMETHODCALLTYPE GetGameResolution(GameSetResolutionAbiProbe* resolution) = 0;
+    virtual int STDMETHODCALLTYPE RegisterPayEvent(void* callback) = 0;
+    virtual int STDMETHODCALLTYPE ShowDragonLenovoLoginDlg(LPLOGINCALLBACKPROBE callback, int userData, int reserved) = 0;
+    virtual int STDMETHODCALLTYPE AsyncShowDragonLenovoPayWindow(LPCWSTR orderId, LPCWSTR productId, LPCWSTR groupId, LPCWSTR areaId, LPCWSTR roleId, LPCWSTR extend) = 0;
+    virtual int STDMETHODCALLTYPE GetTicketForAppid(BSTR* ticket, BSTR* sndaid, int appId) = 0;
+    virtual int STDMETHODCALLTYPE VertifyDoubleLogin(int isDoubleLogin) = 0;
+    virtual int STDMETHODCALLTYPE SetDoubleLoginCallBack(LPDOUBLELOGINCALLBACKPROBE callback) = 0;
+    virtual int STDMETHODCALLTYPE OpenFaceVertifyDlg(LPFACEVERTIFYCALLBACKPROBE callback, LPCWSTR verifyType) = 0;
+    virtual int STDMETHODCALLTYPE OpenCollectUserMsgDlg(LPCOLLECTUSERMSGCALLBACKPROBE callback, LPCWSTR collectMsgType) = 0;
+};
+
+struct __declspec(uuid("15B0B068-A577-4695-A1C9-16F87F765A07")) ISDOAApp4AbiProbe : ISDOAApp3AbiProbe {
+    virtual int STDMETHODCALLTYPE SetLoginMode(int loginMode) = 0;
+    virtual int STDMETHODCALLTYPE GetAccountLoginState(LPLOGINSTATCALLBACKPROBE callback) = 0;
+    virtual int STDMETHODCALLTYPE SetOwnerWindow(HWND hwnd) = 0;
+    virtual int STDMETHODCALLTYPE MoveLoginDialog(int x, int y) = 0;
+    virtual int STDMETHODCALLTYPE SessionLoginGame(LPLOGINGAMECALLBACKPROBE callback, const AppInfoAbiProbe* appInfo) = 0;
+    virtual int STDMETHODCALLTYPE SetDpiSetting(int dpi) = 0;
+    virtual int STDMETHODCALLTYPE GhomePay(const char* extend, LPLOGINPAYCALLBACKPROBE callback) = 0;
+    virtual int STDMETHODCALLTYPE GhomeGetCPSChannelInfo(LPLOGINGETCHANNELCODECALLBACKPROBE callback) = 0;
+};
+
+struct __declspec(uuid("CD997351-C50F-4602-995E-E8B3DD890EB8")) ISDOAApp5AbiProbe : IUnknown {
+    virtual int STDMETHODCALLTYPE OpenFaceVerifyDialog(LPFACEVERTIFYCALLBACKPROBE callback, LPCWSTR verifyType) = 0;
+    virtual int STDMETHODCALLTYPE OpenCollectUserMsgDialog(LPCOLLECTUSERMSGCALLBACKPROBE callback, LPCWSTR collectMsgType) = 0;
+};
+
 struct __declspec(uuid("6469AE4A-4862-4248-913C-704179AFE43E")) ISDOADx8AbiProbe : IUnknown {};
 struct __declspec(uuid("59B789AB-BEE9-4C68-AA23-BCA9AB1A3E50")) ISDOADx9AbiProbe : IUnknown {};
 struct __declspec(uuid("7344D794-2D10-541C-F245-824F5A094B37")) ISDOADx11AbiProbe : IUnknown {};
@@ -109,11 +169,38 @@ int g_payCallbackCode = SDOL_ERRORCODE_FAILED;
 bool g_loginCallbackCalled = false;
 int g_loginCallbackCode = SDOL_ERRORCODE_FAILED;
 std::wstring g_loginCallbackSession;
+bool g_channelCallbackCalled = false;
+int g_channelCallbackCode = SDOL_ERRORCODE_FAILED;
+bool g_faceCallbackCalled = false;
+int g_faceCallbackCode = SDOL_ERRORCODE_FAILED;
+bool g_collectCallbackCalled = false;
+int g_collectCallbackCode = SDOL_ERRORCODE_FAILED;
 
 BOOL CALLBACK payCallback(int errorCode, const char*)
 {
     g_payCallbackCalled = true;
     g_payCallbackCode = errorCode;
+    return TRUE;
+}
+
+BOOL CALLBACK channelCallback(int errorCode, const GhomeChannelInfoAbiProbe* info)
+{
+    g_channelCallbackCalled = true;
+    g_channelCallbackCode = errorCode;
+    return errorCode == SDOL_ERRORCODE_OK && info && info->szChannelCode;
+}
+
+BOOL CALLBACK faceCallback(int errorCode, LPCSTR)
+{
+    g_faceCallbackCalled = true;
+    g_faceCallbackCode = errorCode;
+    return TRUE;
+}
+
+BOOL CALLBACK collectCallback(int errorCode, LPCSTR)
+{
+    g_collectCallbackCalled = true;
+    g_collectCallbackCode = errorCode;
     return TRUE;
 }
 
@@ -300,6 +387,115 @@ bool verifySdoaAppCalls(LPigwGetModuleProbe getModule)
     return true;
 }
 
+bool verifySdoaApp4Calls(LPigwGetModuleProbe getModule)
+{
+    SetEnvironmentVariableW(L"QTLOGIN_DISABLE_BROWSER_LAUNCH", L"1");
+
+    ISDOAApp4AbiProbe* app = nullptr;
+    if (!getModule(__uuidof(ISDOAApp4AbiProbe), reinterpret_cast<void**>(&app)) || !app) {
+        std::wcerr << L"igwGetModule(ISDOAApp4) failed\n";
+        return false;
+    }
+
+    int code = app->SetLoginMode(2);
+    if (code != 0) {
+        std::wcerr << L"ISDOAApp4::SetLoginMode should be supported, code=" << code << L"\n";
+        app->Release();
+        return false;
+    }
+
+    code = app->SetOwnerWindow(nullptr);
+    if (code != 0) {
+        std::wcerr << L"ISDOAApp4::SetOwnerWindow should be supported, code=" << code << L"\n";
+        app->Release();
+        return false;
+    }
+
+    code = app->MoveLoginDialog(24, 48);
+    if (code != 0) {
+        std::wcerr << L"ISDOAApp4::MoveLoginDialog should be supported, code=" << code << L"\n";
+        app->Release();
+        return false;
+    }
+
+    code = app->VertifyDoubleLogin(1);
+    if (code != 0) {
+        std::wcerr << L"ISDOAApp3::VertifyDoubleLogin should be supported, code=" << code << L"\n";
+        app->Release();
+        return false;
+    }
+
+    code = app->SetDpiSetting(144);
+    if (code != 0) {
+        std::wcerr << L"ISDOAApp4::SetDpiSetting should be supported, code=" << code << L"\n";
+        app->Release();
+        return false;
+    }
+
+    g_payCallbackCalled = false;
+    g_payCallbackCode = SDOL_ERRORCODE_FAILED;
+    code = app->GhomePay(
+        "{\"areaid\":\"1\",\"productid\":\"GWPAY-791000855\",\"gameorder\":\"ORDER-DEMO\",\"extend\":\"test\",\"groupid\":\"1\"}",
+        &payCallback);
+    if (code != 0 || !g_payCallbackCalled || g_payCallbackCode != 0) {
+        std::wcerr << L"ISDOAApp4::GhomePay should callback OK, code=" << code
+                   << L" callback=" << g_payCallbackCalled
+                   << L" callbackCode=" << g_payCallbackCode << L"\n";
+        app->Release();
+        return false;
+    }
+
+    g_channelCallbackCalled = false;
+    g_channelCallbackCode = SDOL_ERRORCODE_FAILED;
+    code = app->GhomeGetCPSChannelInfo(&channelCallback);
+    if (code != 0 || !g_channelCallbackCalled || g_channelCallbackCode != 0) {
+        std::wcerr << L"ISDOAApp4::GhomeGetCPSChannelInfo should callback OK, code=" << code
+                   << L" callback=" << g_channelCallbackCalled
+                   << L" callbackCode=" << g_channelCallbackCode << L"\n";
+        app->Release();
+        return false;
+    }
+
+    app->Release();
+    return true;
+}
+
+bool verifySdoaApp5Calls(LPigwGetModuleProbe getModule)
+{
+    SetEnvironmentVariableW(L"QTLOGIN_DISABLE_BROWSER_LAUNCH", L"1");
+
+    ISDOAApp5AbiProbe* app = nullptr;
+    if (!getModule(__uuidof(ISDOAApp5AbiProbe), reinterpret_cast<void**>(&app)) || !app) {
+        std::wcerr << L"igwGetModule(ISDOAApp5) failed\n";
+        return false;
+    }
+
+    g_faceCallbackCalled = false;
+    g_faceCallbackCode = SDOL_ERRORCODE_FAILED;
+    int code = app->OpenFaceVerifyDialog(&faceCallback, L"csblacklist");
+    if (code != 0 || !g_faceCallbackCalled || g_faceCallbackCode != 0) {
+        std::wcerr << L"ISDOAApp5::OpenFaceVerifyDialog should callback OK, code=" << code
+                   << L" callback=" << g_faceCallbackCalled
+                   << L" callbackCode=" << g_faceCallbackCode << L"\n";
+        app->Release();
+        return false;
+    }
+
+    g_collectCallbackCalled = false;
+    g_collectCallbackCode = SDOL_ERRORCODE_FAILED;
+    code = app->OpenCollectUserMsgDialog(&collectCallback, L"1013");
+    if (code != 0 || !g_collectCallbackCalled || g_collectCallbackCode != 0) {
+        std::wcerr << L"ISDOAApp5::OpenCollectUserMsgDialog should callback OK, code=" << code
+                   << L" callback=" << g_collectCallbackCalled
+                   << L" callbackCode=" << g_collectCallbackCode << L"\n";
+        app->Release();
+        return false;
+    }
+
+    app->Release();
+    return true;
+}
+
 }
 
 int wmain()
@@ -366,7 +562,9 @@ int wmain()
     }
     const bool igwOk =
         queryIgwModule(igwGetModule, __uuidof(ISDOADx9AbiProbe), L"ISDOADx9") &&
-        verifySdoaAppCalls(igwGetModule);
+        verifySdoaAppCalls(igwGetModule) &&
+        verifySdoaApp4Calls(igwGetModule) &&
+        verifySdoaApp5Calls(igwGetModule);
     igwTerminal();
     FreeLibrary(sdk);
 

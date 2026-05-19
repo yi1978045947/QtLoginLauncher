@@ -14,6 +14,10 @@ std::vector<qtlogin::config::ConfigManager::UserAccountEntry> removeAccountHisto
     const std::vector<qtlogin::config::ConfigManager::UserAccountEntry>& accounts,
     const std::wstring& account);
 
+std::wstring accountInputTextAfterHistoryRemoval(
+    const std::wstring& currentInput,
+    const std::vector<qtlogin::config::ConfigManager::UserAccountEntry>& remainingAccounts);
+
 bool shouldRefreshAccountHistoryUiAfterRecord(bool loginWindowCompleting);
 
 bool shouldQueueAccountHistoryRemoveFromPopupClick();

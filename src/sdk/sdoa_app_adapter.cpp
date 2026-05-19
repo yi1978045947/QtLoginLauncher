@@ -80,6 +80,10 @@ HRESULT SdoaAppAdapter::QueryInterface(REFIID riid, void** object)
         *object = static_cast<ISDOAApp*>(this);
     } else if (riid == __uuidof(ISDOAApp2)) {
         *object = static_cast<ISDOAApp2*>(this);
+    } else if (riid == __uuidof(ISDOAApp3)) {
+        *object = static_cast<ISDOAApp3*>(this);
+    } else if (riid == __uuidof(ISDOAApp4)) {
+        *object = static_cast<ISDOAApp4*>(this);
     } else {
         return E_NOINTERFACE;
     }
@@ -357,6 +361,177 @@ int SdoaAppAdapter::GetClientSignature(LPCWSTR indication, BSTR* signature)
     return *signature ? SDOA_OK : SDOA_ERRORCODE_FAILED;
 }
 
+int SdoaAppAdapter::LoginFeedback(LPCWSTR, int, int)
+{
+    return SDOA_OK;
+}
+
+int SdoaAppAdapter::OpenMatrixGamePay()
+{
+    return OpenWindow(L"HTML", L"MatrixGamePay", L"https://www.daoyu8.com/#/", 0, 0, 900, 640, L"center");
+}
+
+int SdoaAppAdapter::SetLoginDialogState(int)
+{
+    return SDOA_OK;
+}
+
+int SdoaAppAdapter::OpenActivityWindow(LPCWSTR winType, LPCWSTR winName, LPCWSTR src, int left, int top, int width, int height, LPCWSTR mode)
+{
+    return OpenWindow(winType, winName, src, left, top, width, height, mode);
+}
+
+int SdoaAppAdapter::AuthCodeLogin(LPLOGINAUTHCODECALLBACKPROC callback, LPCSTR)
+{
+    if (callback) {
+        callback(SDOA_ERRORCODE_FAILED, nullptr);
+    }
+    return SDOA_ERRORCODE_FAILED;
+}
+
+int SdoaAppAdapter::GetTicket(BSTR* ticket, BSTR* sndaid)
+{
+    return SdkRuntime::instance().getTicket(ticket, sndaid);
+}
+
+int SdoaAppAdapter::OpenXinYouLoginIeAgain()
+{
+    return SDOA_ERRORCODE_FAILED;
+}
+
+int SdoaAppAdapter::OpenXinIeWindow(LPCWSTR winType, LPCWSTR winName, LPCWSTR src, int left, int top, int width, int height, LPCWSTR mode)
+{
+    return OpenWindow(winType, winName, src, left, top, width, height, mode);
+}
+
+HRESULT SdoaAppAdapter::OnGameProc(HWND, UINT, WPARAM, LPARAM, LRESULT* result)
+{
+    if (result) {
+        *result = 0;
+    }
+    return S_FALSE;
+}
+
+void* SdoaAppAdapter::OnGetSharedImage()
+{
+    return nullptr;
+}
+
+int SdoaAppAdapter::GetGameResolution(GameSetResolution* resolution)
+{
+    if (!resolution) {
+        return SDOA_ERRORCODE_INVALIDPARAM;
+    }
+    resolution->full_screen = false;
+    resolution->width = 0;
+    resolution->height = 0;
+    return SDOA_OK;
+}
+
+int SdoaAppAdapter::RegisterPayEvent(LPDRAGONLENOVOPAYWINDOWCLOSEDCALLBACKPROC)
+{
+    return SDOA_OK;
+}
+
+int SdoaAppAdapter::ShowDragonLenovoLoginDlg(LPLOGINCALLBACKPROC callback, int userData, int reserved)
+{
+    return ShowLoginDialog(callback, userData, reserved);
+}
+
+int SdoaAppAdapter::AsyncShowDragonLenovoPayWindow(LPCWSTR, LPCWSTR, LPCWSTR, LPCWSTR, LPCWSTR, LPCWSTR)
+{
+    return SDOA_ERRORCODE_FAILED;
+}
+
+int SdoaAppAdapter::GetTicketForAppid(BSTR* ticket, BSTR* sndaid, int)
+{
+    return GetTicket(ticket, sndaid);
+}
+
+int SdoaAppAdapter::VertifyDoubleLogin(int isDoubleLogin)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    doubleLoginEnabled_ = isDoubleLogin != 0;
+    return SDOA_OK;
+}
+
+int SdoaAppAdapter::SetDoubleLoginCallBack(LPDOUBLELOGINCALLBACKPROC callback)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    doubleLoginCallback_ = callback;
+    return SDOA_OK;
+}
+
+int SdoaAppAdapter::OpenFaceVertifyDlg(LPFACEVERTIFYCALLBACKPROC callback, LPCWSTR verifyType)
+{
+    return SdkRuntime::instance().openFaceVerifyDialog(callback, verifyType);
+}
+
+int SdoaAppAdapter::OpenCollectUserMsgDlg(LPCOLLECTUSERMSGCALLBACKPROC callback, LPCWSTR collectMsgType)
+{
+    return SdkRuntime::instance().openCollectUserMsgDialog(callback, collectMsgType);
+}
+
+int SdoaAppAdapter::SetLoginMode(int loginMode)
+{
+    return SdkRuntime::instance().setLoginMode(loginMode);
+}
+
+int SdoaAppAdapter::GetAccountLoginState(LPLOGINSTATCALLBACKPROC callback)
+{
+    int state = SDOA_LOGINSTATE_NONE;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        state = loginState_;
+    }
+    if (callback) {
+        callback(state == SDOA_LOGINSTATE_OK ? SDOA_ERRORCODE_OK : SDOA_ERRORCODE_FAILED);
+    }
+    return SDOA_OK;
+}
+
+int SdoaAppAdapter::SetOwnerWindow(HWND hwnd)
+{
+    return SdkRuntime::instance().setOwnerWindow(hwnd);
+}
+
+int SdoaAppAdapter::MoveLoginDialog(int x, int y)
+{
+    return SdkRuntime::instance().moveLoginDialog(x, y);
+}
+
+int SdoaAppAdapter::SessionLoginGame(LPLOGINGAMECALLBACKPROC callback, const AppInfo*)
+{
+    if (callback) {
+        callback(SDOA_ERRORCODE_FAILED, nullptr);
+    }
+    return SDOA_ERRORCODE_FAILED;
+}
+
+int SdoaAppAdapter::SetDpiSetting(int dpi)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    dpiSetting_ = dpi > 0 ? dpi : 96;
+    return SDOA_OK;
+}
+
+int SdoaAppAdapter::GhomePay(const char* extend, LPLOGINPAYCALLBACKPROC callback)
+{
+    return SdkRuntime::instance().ghomePay(extend, callback);
+}
+
+int SdoaAppAdapter::GhomeGetCPSChannelInfo(LPLOGINGETCHANNELCODECALLBACKPROC callback)
+{
+    GhomeChannelInfo info{};
+    info.szApplicationChannel = "qtlogin";
+    info.szChannelCode = "qtlogin-demo";
+    info.szAdtraceId = "";
+    if (callback) {
+        callback(SDOA_ERRORCODE_OK, &info);
+    }
+    return SDOA_OK;
+}
+
 int SdoaAppAdapter::handleSdolLoginCallback(int errorCode, const SDOLLoginResult* result, int userData, int)
 {
     LPLOGINCALLBACKPROC callback = nullptr;
@@ -397,6 +572,39 @@ int SdoaAppAdapter::handleSdolLoginCallback(int errorCode, const SDOLLoginResult
     const int sdoaError = mapSdolErrorToSdoaError(errorCode);
     const BOOL shouldClose = callback(sdoaError, sdoaError == SDOA_ERRORCODE_OK ? &sdoaResult : nullptr, userData, 0);
     return shouldClose ? SDOL_LOGINRESULT_CLOSE : SDOL_LOGINRESULT_KEEP_SHOWN;
+}
+
+SdoaApp5Adapter& SdoaApp5Adapter::instance()
+{
+    static SdoaApp5Adapter adapter;
+    return adapter;
+}
+
+HRESULT SdoaApp5Adapter::QueryInterface(REFIID riid, void** object)
+{
+    if (!object) {
+        return E_POINTER;
+    }
+    *object = nullptr;
+    if (riid == IID_IUnknown || riid == __uuidof(ISDOAApp5)) {
+        *object = static_cast<ISDOAApp5*>(this);
+        AddRef();
+        return S_OK;
+    }
+    return E_NOINTERFACE;
+}
+
+ULONG SdoaApp5Adapter::AddRef() { return 1; }
+ULONG SdoaApp5Adapter::Release() { return 1; }
+
+int SdoaApp5Adapter::OpenFaceVerifyDialog(LPFACEVERTIFYCALLBACKPROC callback, LPCWSTR verifyType)
+{
+    return SdkRuntime::instance().openFaceVerifyDialog(callback, verifyType);
+}
+
+int SdoaApp5Adapter::OpenCollectUserMsgDialog(LPCOLLECTUSERMSGCALLBACKPROC callback, LPCWSTR collectMsgType)
+{
+    return SdkRuntime::instance().openCollectUserMsgDialog(callback, collectMsgType);
 }
 
 SdoaAppUtilsAdapter& SdoaAppUtilsAdapter::instance()
@@ -496,6 +704,9 @@ bool querySdoaModule(REFIID riid, void** intf)
     }
     *intf = nullptr;
     if (SUCCEEDED(SdoaAppAdapter::instance().QueryInterface(riid, intf))) {
+        return true;
+    }
+    if (SUCCEEDED(SdoaApp5Adapter::instance().QueryInterface(riid, intf))) {
         return true;
     }
     if (SUCCEEDED(SdoaAppUtilsAdapter::instance().QueryInterface(riid, intf))) {

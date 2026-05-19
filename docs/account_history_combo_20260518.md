@@ -57,6 +57,7 @@ Implemented in:
 - `src/sdologin/account_history_model.h/.cpp`
   - `preferredAccountHistoryText` selects the newest local account as the default input text.
   - `removeAccountHistoryEntry` removes matching entries case-insensitively for both the popup and shared account refresh.
+  - `accountInputTextAfterHistoryRemoval` keeps the text currently typed in the shared account edit when a saved history row is removed; it only falls back to the newest remaining saved account if the current input is empty.
   - `accountHistoryPopupFontPixelSize` keeps dropdown text scaled with the legacy skin DPI factor; the base DuiLib dropdown font is treated as 16 px.
 - `src/sdologin/login_window.cpp`
   - Password login uses `AccountHistoryCombo`.
@@ -86,6 +87,9 @@ under `assets/default_config/config/config.xml`.
 - The saved list is truncated to `MaxAccountCount`; default is 10.
 - Deleting an item from the dropdown writes back to `userinfo.xml`.
 - The deleted row is removed from the next dropdown open without synchronously rebuilding child controls or writing config during the remove click handler.
+- Clicking the account arrow opens the skinned dropdown even when no accounts are stored yet. This keeps the account picker behavior visible and avoids making the arrow feel dead on a clean install.
+- Deleting an account from the dropdown removes that row from `userinfo.xml` and from the dropdown list, but it does not clear the current password/one-click input box if that box already contains text.
+- The newest saved account is inserted into both password login and one-click login input boxes when the login window opens. That first account remains in the current input until the user edits it or the config-backed account record is removed and the next window open reloads from config.
 - At 150% DPI, dropdown account text uses a 24 px font so it visually tracks the scaled login window instead of Qt's unscaled default font.
 - Passwords are never stored by this feature.
 
@@ -187,4 +191,19 @@ cmake --build .\qtlogin_rewrite\build_qt5_32 --config Debug --target sdologin DX
 .\qtlogin_rewrite\build_qt5_32\bin\Debug\account_history_combo_tests.exe
 .\qtlogin_rewrite\build_qt5_32\bin\Debug\sdologin_tests.exe
 .\qtlogin_rewrite\build_qt5_32\bin\Debug\config_tests.exe
+```
+
+2026-05-19 empty dropdown/current input follow-up:
+
+- `AccountHistoryCombo::showPopup` no longer returns early when the account vector is empty.
+- Popup height calculation uses at least one row height, so the background frame can still be displayed with an empty account list.
+- `LoginWindow::removeHistoryAccount` now keeps the current shared account input if it is non-empty after deleting a saved history row.
+- This means the dropdown config and the active input box are intentionally separate: delete removes the saved row, while the text the user is currently editing remains visible.
+
+Verification:
+
+```bat
+cmake --build .\qtlogin_rewrite\build_qt5_32 --config Debug --target account_history_combo_tests sdologin_tests -- /m
+.\qtlogin_rewrite\build_qt5_32\bin\Debug\account_history_combo_tests.exe
+.\qtlogin_rewrite\build_qt5_32\bin\Debug\sdologin_tests.exe
 ```
