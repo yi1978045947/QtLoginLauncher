@@ -4,7 +4,6 @@
 #include <vector>
 
 #include <QLineEdit>
-#include <QPointer>
 #include <QString>
 #include <QVector>
 #include <QWidget>
@@ -59,7 +58,7 @@ private:
     std::function<void(const std::wstring&)> removeHandler_;
     QLineEdit* edit_ = nullptr;
     QPushButton* dropButton_ = nullptr;
-    QPointer<QFrame> popup_;
+    QFrame* popup_ = nullptr;
     bool popupRefreshPending_ = false;
 };
 

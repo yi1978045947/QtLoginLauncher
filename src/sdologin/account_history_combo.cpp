@@ -314,7 +314,7 @@ AccountHistoryCombo::~AccountHistoryCombo()
 {
     if (popup_) {
         popup_->removeEventFilter(this);
-        static_cast<AccountHistoryPopup*>(popup_.data())->detachHandlers();
+        static_cast<AccountHistoryPopup*>(popup_)->detachHandlers();
         popup_->hide();
         popup_ = nullptr;
     }
@@ -351,7 +351,7 @@ void AccountHistoryCombo::resizeEvent(QResizeEvent* event)
 
 bool AccountHistoryCombo::eventFilter(QObject* watched, QEvent* event)
 {
-    if (watched == popup_.data() && event->type() == QEvent::MouseButtonPress) {
+    if (watched == popup_ && event->type() == QEvent::MouseButtonPress) {
         auto* mouse = static_cast<QMouseEvent*>(event);
         if (!popup_->rect().contains(mouse->pos())) {
             hidePopup();
@@ -427,6 +427,9 @@ void AccountHistoryCombo::rebuildPopup()
         popup_->setObjectName(QStringLiteral("accountHistoryPopup"));
         popup_->setAttribute(Qt::WA_StyledBackground, true);
         popup_->installEventFilter(this);
+        connect(popup_, &QObject::destroyed, this, [this]() {
+            popup_ = nullptr;
+        });
     }
 
     QFont popupFont = edit_ ? edit_->font() : font();
@@ -447,7 +450,7 @@ void AccountHistoryCombo::rebuildPopup()
         popupItems.push_back({accountText, accountText});
     }
 
-    auto* historyPopup = static_cast<AccountHistoryPopup*>(popup_.data());
+    auto* historyPopup = static_cast<AccountHistoryPopup*>(popup_);
     historyPopup->configure(
         std::move(popupItems),
         skinPath(QStringLiteral("combobox/bg.png")),
@@ -515,11 +518,13 @@ void AccountHistoryCombo::removeAccount(const QString& account)
         return;
     }
 
-    QPointer<AccountHistoryCombo> guard(this);
-    QTimer::singleShot(0, this, [guard, removeHandler, account]() {
-        if (guard) {
-            removeHandler(account.toStdWString());
-        }
+    QObject* timerContext = window();
+    if (!timerContext) {
+        timerContext = this;
+    }
+    const std::wstring accountText = account.toStdWString();
+    QTimer::singleShot(0, timerContext, [removeHandler, accountText]() {
+        removeHandler(accountText);
     });
 }
 

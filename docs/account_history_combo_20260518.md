@@ -46,6 +46,7 @@ Implemented in:
   - The dropdown is custom-painted by one popup widget instead of being rebuilt from child `QPushButton` rows. This avoids deleting or hiding button children while a delete-click event is still being dispatched.
   - Delete first closes the popup and queues the outer `userinfo.xml` write to the next Qt event tick.
   - The popup is parented to the top login window for overlay positioning; `AccountHistoryCombo` detaches callbacks and hides it during destruction so stale popup events cannot call back into a deleted combo.
+  - The popup pointer is a raw `QFrame*` that is cleared through the popup `destroyed` signal. The delete path no longer uses `QPointer`, because the real crash dump showed Qt weak-pointer/atomic reference-count reads could still be reached during the remove-click event.
   - The public setter still accepts the config layer's `std::vector<UserAccountEntry>`, but the widget stores accounts internally as `QVector<QString>`. This keeps the Qt UI control out of MSVC Debug STL iterator-proxy lifetime issues when a delete click refreshes the account list.
   - `syncSharedAccountText` synchronizes the password and one-click account edits by discovering live `accountEdit` children from the current login window. It does not cache `QLineEdit` weak pointers, because delete/refresh callbacks can run while pages or popup widgets are being rebuilt.
 - `tests/account_history_combo_tests`
@@ -134,3 +135,12 @@ Fix:
 - Added `syncSharedAccountText(QWidget* host, QLineEdit* source, const QString& text)`.
 - The sync step now scans live `accountEdit` children every time it needs to propagate text.
 - Added a regression test that syncs two account edits, deletes one edit, then syncs again.
+
+2026-05-19 third delete crash follow-up:
+
+- A new WER event from the rebuilt exe moved the crash to offset `0x00047880`, still inside Qt's atomic reference-count load.
+- The remaining account-dropdown delete path still used `QPointer` for `popup_` and for the delayed remove guard.
+- `AccountHistoryCombo` now avoids `QPointer` completely:
+  - `popup_` is a raw pointer nulled by the popup `destroyed` signal.
+  - Delayed account removal uses the login window as the `QTimer::singleShot` context, so Qt cancels the callback if the window is gone.
+  - The queued callback captures a plain `std::wstring`, not a Qt weak pointer or live popup object.
