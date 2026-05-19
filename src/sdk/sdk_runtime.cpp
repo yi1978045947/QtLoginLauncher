@@ -96,6 +96,32 @@ bool browserLaunchDisabled()
     return length > 0 && length < std::size(value);
 }
 
+bool environmentFlag(const wchar_t* name)
+{
+    wchar_t value[16] = {};
+    const DWORD length = GetEnvironmentVariableW(name, value, static_cast<DWORD>(std::size(value)));
+    if (length == 0 || length >= std::size(value)) {
+        return false;
+    }
+    return wcscmp(value, L"0") != 0;
+}
+
+void appendLoginProcessTestArguments(std::wstring* arguments, int attempt)
+{
+    if (!arguments) {
+        return;
+    }
+    if (environmentFlag(L"QTLOGIN_MOCK_SUCCESS")) {
+        *arguments += L" --mock-success";
+    }
+    if (environmentFlag(L"QTLOGIN_MOCK_CANCEL")) {
+        *arguments += L" --mock-cancel";
+    }
+    if (attempt == 0 && environmentFlag(L"QTLOGIN_TEST_EXIT_FIRST_LOGIN_PROCESS")) {
+        *arguments += L" --mock-exit-after-show";
+    }
+}
+
 int launchBrowserWindow(const std::wstring& title, const std::wstring& url)
 {
     if (url.empty()) {
@@ -402,109 +428,139 @@ int SdkRuntime::showLoginDialog(LPSDOLLOGINCALLBACKPROC callback, int userData, 
         serverId = serverId_;
     }
 
-    const uint64_t requestId = nextRequestId_.fetch_add(1);
-    const std::wstring pipeName = makePipeName(requestId);
-    std::wstring extraArguments;
-    wchar_t autoSuccessMs[32] = {};
-    const DWORD autoSuccessLength = GetEnvironmentVariableW(L"QTLOGIN_AUTO_SUCCESS_MS", autoSuccessMs, static_cast<DWORD>(std::size(autoSuccessMs)));
-    if (autoSuccessLength > 0 && autoSuccessLength < std::size(autoSuccessMs)) {
-        extraArguments += L" --auto-success-ms=";
-        extraArguments += autoSuccessMs;
-    }
+    protocol::Message result;
+    bool haveResult = false;
+    int lastError = SDOL_ERRORCODE_FAILED;
+    const int maxAttempts = environmentFlag(L"QTLOGIN_DISABLE_LOGIN_PROCESS_RELAUNCH") ? 1 : 2;
 
-    LoginProcessManager process;
-    if (!process.start(pipeName, extraArguments)) {
-        return SDOL_ERRORCODE_FAILED;
-    }
+    for (int attempt = 0; attempt < maxAttempts; ++attempt) {
+        const uint64_t requestId = nextRequestId_.fetch_add(1);
+        const std::wstring pipeName = makePipeName(requestId);
+        std::wstring extraArguments;
+        wchar_t autoSuccessMs[32] = {};
+        const DWORD autoSuccessLength = GetEnvironmentVariableW(L"QTLOGIN_AUTO_SUCCESS_MS", autoSuccessMs, static_cast<DWORD>(std::size(autoSuccessMs)));
+        if (autoSuccessLength > 0 && autoSuccessLength < std::size(autoSuccessMs)) {
+            extraArguments += L" --auto-success-ms=";
+            extraArguments += autoSuccessMs;
+        }
+        appendLoginProcessTestArguments(&extraArguments, attempt);
 
-    HANDLE activeHandle = duplicateProcessHandle(process.processHandle());
-    if (!activeHandle) {
-        TerminateProcess(process.processHandle(), 0);
-        process.wait(2000);
-        return SDOL_ERRORCODE_FAILED;
-    }
+        LoginProcessManager process;
+        if (!process.start(pipeName, extraArguments)) {
+            lastError = SDOL_ERRORCODE_FAILED;
+            continue;
+        }
 
-    HANDLE previousActiveProcess = nullptr;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        previousActiveProcess = activeLoginProcess_;
-        activeLoginProcess_ = activeHandle;
-        activeLoginRequestId_ = requestId;
-    }
-    stopAndCloseProcess(previousActiveProcess);
+        HANDLE activeHandle = duplicateProcessHandle(process.processHandle());
+        if (!activeHandle) {
+            TerminateProcess(process.processHandle(), 0);
+            process.wait(2000);
+            lastError = SDOL_ERRORCODE_FAILED;
+            continue;
+        }
 
-    auto takeActiveProcess = [this, requestId]() {
-        HANDLE process = nullptr;
+        HANDLE previousActiveProcess = nullptr;
         {
             std::lock_guard<std::mutex> lock(mutex_);
-            if (activeLoginRequestId_ == requestId) {
-                process = activeLoginProcess_;
-                activeLoginProcess_ = nullptr;
-                activeLoginRequestId_ = 0;
+            previousActiveProcess = activeLoginProcess_;
+            activeLoginProcess_ = activeHandle;
+            activeLoginRequestId_ = requestId;
+        }
+        stopAndCloseProcess(previousActiveProcess);
+
+        auto takeActiveProcess = [this, requestId]() {
+            HANDLE process = nullptr;
+            {
+                std::lock_guard<std::mutex> lock(mutex_);
+                if (activeLoginRequestId_ == requestId) {
+                    process = activeLoginProcess_;
+                    activeLoginProcess_ = nullptr;
+                    activeLoginRequestId_ = 0;
+                }
             }
+            return process;
+        };
+        auto clearActiveProcess = [&takeActiveProcess]() {
+            HANDLE processToClose = takeActiveProcess();
+            if (processToClose) {
+                CloseHandle(processToClose);
+            }
+        };
+        auto failActiveLogin = [&takeActiveProcess](int errorCode) {
+            stopAndCloseProcess(takeActiveProcess());
+            return errorCode;
+        };
+
+        ipc::PipeConnection connection;
+        ipc::PipeServer server;
+        if (!server.listen(pipeName, 10000, &connection)) {
+            common::logLine(L"sdk", L"pipe server listen timeout attempt=" + std::to_wstring(attempt + 1));
+            lastError = failActiveLogin(SDOL_ERRORCODE_FAILED);
+            continue;
         }
-        return process;
-    };
-    auto clearActiveProcess = [&takeActiveProcess]() {
-        HANDLE processToClose = takeActiveProcess();
-        if (processToClose) {
-            CloseHandle(processToClose);
+
+        protocol::Message hello;
+        if (!connection.receive(&hello) || hello.type != protocol::MessageType::Hello) {
+            common::logLine(L"sdk", L"invalid hello from sdologin attempt=" + std::to_wstring(attempt + 1));
+            lastError = failActiveLogin(SDOL_ERRORCODE_FAILED);
+            continue;
         }
-    };
-    auto failActiveLogin = [&takeActiveProcess](int errorCode) {
-        stopAndCloseProcess(takeActiveProcess());
-        return errorCode;
-    };
 
-    ipc::PipeConnection connection;
-    ipc::PipeServer server;
-    if (!server.listen(pipeName, 10000, &connection)) {
-        common::logLine(L"sdk", L"pipe server listen timeout");
-        return failActiveLogin(SDOL_ERRORCODE_FAILED);
+        protocol::Message ack;
+        ack.type = protocol::MessageType::HelloAck;
+        ack.requestId = requestId;
+        ack.fields["sdkProcessId"] = narrowInt(static_cast<int>(GetCurrentProcessId()));
+        if (!connection.send(ack)) {
+            lastError = failActiveLogin(SDOL_ERRORCODE_FAILED);
+            continue;
+        }
+
+        protocol::Message show;
+        show.type = protocol::MessageType::ShowLogin;
+        show.requestId = requestId;
+        show.fields["appId"] = narrowInt(appInfo.appId);
+        show.fields["appName"] = common::wideToUtf8(appInfo.appName);
+        show.fields["appVer"] = common::wideToUtf8(appInfo.appVer);
+        show.fields["areaId"] = narrowInt(appInfo.areaId);
+        show.fields["groupId"] = narrowInt(appInfo.groupId);
+        show.fields["loginMode"] = narrowInt(loginMode);
+        show.fields["ownerHwnd"] = narrowPointer(owner);
+        show.fields["embedWindow"] = (directXOwner || loginMode == AttachToLoginMode) ? "1" : "0";
+        if (show.fields["embedWindow"] == "1") {
+            const double dpiScale = legacyDpiScaleForOwnerWindow(owner);
+            show.fields["legacyDpiScale"] = narrowDouble(dpiScale);
+            common::logLine(L"sdk", L"passing owner dpi scale=" + std::to_wstring(dpiScale));
+        }
+        show.fields["posX"] = narrowInt(loginPosX);
+        show.fields["posY"] = narrowInt(loginPosY);
+        show.fields["gameClientType"] = common::wideToUtf8(gameClientType);
+        show.fields["serverId"] = serverId;
+        show.fields["reserved"] = narrowInt(reserved);
+        if (!connection.send(show)) {
+            lastError = failActiveLogin(SDOL_ERRORCODE_FAILED);
+            continue;
+        }
+
+        if (!connection.receive(&result)) {
+            DWORD exitCode = 0;
+            if (GetExitCodeProcess(process.processHandle(), &exitCode)) {
+                common::logLine(
+                    L"sdk",
+                    L"sdologin ended before login result attempt=" + std::to_wstring(attempt + 1)
+                        + L" exitCode=" + std::to_wstring(exitCode));
+            }
+            lastError = failActiveLogin(SDOL_ERRORCODE_LOGINCANCEL);
+            continue;
+        }
+
+        process.wait(2000);
+        clearActiveProcess();
+        haveResult = true;
+        break;
     }
 
-    protocol::Message hello;
-    if (!connection.receive(&hello) || hello.type != protocol::MessageType::Hello) {
-        common::logLine(L"sdk", L"invalid hello from sdologin");
-        return failActiveLogin(SDOL_ERRORCODE_FAILED);
-    }
-
-    protocol::Message ack;
-    ack.type = protocol::MessageType::HelloAck;
-    ack.requestId = requestId;
-    ack.fields["sdkProcessId"] = narrowInt(static_cast<int>(GetCurrentProcessId()));
-    if (!connection.send(ack)) {
-        return failActiveLogin(SDOL_ERRORCODE_FAILED);
-    }
-
-    protocol::Message show;
-    show.type = protocol::MessageType::ShowLogin;
-    show.requestId = requestId;
-    show.fields["appId"] = narrowInt(appInfo.appId);
-    show.fields["appName"] = common::wideToUtf8(appInfo.appName);
-    show.fields["appVer"] = common::wideToUtf8(appInfo.appVer);
-    show.fields["areaId"] = narrowInt(appInfo.areaId);
-    show.fields["groupId"] = narrowInt(appInfo.groupId);
-    show.fields["loginMode"] = narrowInt(loginMode);
-    show.fields["ownerHwnd"] = narrowPointer(owner);
-    show.fields["embedWindow"] = (directXOwner || loginMode == AttachToLoginMode) ? "1" : "0";
-    if (show.fields["embedWindow"] == "1") {
-        const double dpiScale = legacyDpiScaleForOwnerWindow(owner);
-        show.fields["legacyDpiScale"] = narrowDouble(dpiScale);
-        common::logLine(L"sdk", L"passing owner dpi scale=" + std::to_wstring(dpiScale));
-    }
-    show.fields["posX"] = narrowInt(loginPosX);
-    show.fields["posY"] = narrowInt(loginPosY);
-    show.fields["gameClientType"] = common::wideToUtf8(gameClientType);
-    show.fields["serverId"] = serverId;
-    show.fields["reserved"] = narrowInt(reserved);
-    if (!connection.send(show)) {
-        return failActiveLogin(SDOL_ERRORCODE_FAILED);
-    }
-
-    protocol::Message result;
-    if (!connection.receive(&result)) {
-        return failActiveLogin(SDOL_ERRORCODE_LOGINCANCEL);
+    if (!haveResult) {
+        return lastError;
     }
 
     int callbackError = SDOL_ERRORCODE_FAILED;
@@ -544,8 +600,6 @@ int SdkRuntime::showLoginDialog(LPSDOLLOGINCALLBACKPROC callback, int userData, 
         callback(callbackError, callbackError == SDOL_ERRORCODE_OK ? &loginResult : nullptr, userData, 0);
     }
 
-    process.wait(2000);
-    clearActiveProcess();
     return callbackError;
 }
 

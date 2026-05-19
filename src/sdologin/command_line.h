@@ -12,6 +12,7 @@ struct SdologinOptions {
     std::wstring standaloneUrl;
     bool mockCancel = false;
     bool mockSuccess = false;
+    bool mockExitAfterShow = false;
     int autoSuccessMs = -1;
 };
 

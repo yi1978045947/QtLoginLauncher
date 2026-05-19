@@ -41,45 +41,86 @@ int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
 
-    QWidget host;
-    host.resize(240, 120);
+    {
+        QWidget host;
+        host.resize(240, 120);
 
-    qtlogin::sdologin::AccountHistoryCombo* combo = nullptr;
-    bool removed = false;
+        qtlogin::sdologin::AccountHistoryCombo* combo = nullptr;
+        bool removed = false;
 
-    qtlogin::sdologin::AccountHistoryCombo::Options options;
-    options.skinRoot = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("skin"));
-    options.placeholder = QStringLiteral("account");
-    options.popupFontPixelSize = 18;
-    options.accounts = {
-        {L"18070557376", 0},
-    };
-    options.removeHandler = [&](const std::wstring& account) {
-        removed = account == L"18070557376";
-        combo->setAccounts({});
-    };
+        qtlogin::sdologin::AccountHistoryCombo::Options options;
+        options.skinRoot = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("skin"));
+        options.placeholder = QStringLiteral("account");
+        options.popupFontPixelSize = 18;
+        options.accounts = {
+            {L"18070557376", 0},
+        };
+        options.removeHandler = [&](const std::wstring& account) {
+            removed = account == L"18070557376";
+            combo->setAccounts({});
+        };
 
-    combo = new qtlogin::sdologin::AccountHistoryCombo(std::move(options), &host);
-    combo->setGeometry(0, 0, 177, 29);
-    host.show();
-    QApplication::processEvents();
+        combo = new qtlogin::sdologin::AccountHistoryCombo(std::move(options), &host);
+        combo->setGeometry(0, 0, 177, 29);
+        host.show();
+        QApplication::processEvents();
 
-    const auto buttons = combo->findChildren<QPushButton*>();
-    assert(!buttons.empty());
-    sendLeftClick(buttons.front(), buttons.front()->rect().center());
+        const auto buttons = combo->findChildren<QPushButton*>();
+        assert(!buttons.empty());
+        sendLeftClick(buttons.front(), buttons.front()->rect().center());
 
-    auto* popup = host.findChild<QFrame*>(QStringLiteral("accountHistoryPopup"));
-    assert(popup);
-    assert(popup->isVisible());
-    const int rowHeight = popup->height() - 4;
-    const QPoint removePoint(popup->width() - rowHeight / 2, 2 + rowHeight / 2);
-    sendLeftClick(popup, removePoint);
-    QApplication::processEvents();
+        auto* popup = host.findChild<QFrame*>(QStringLiteral("accountHistoryPopup"));
+        assert(popup);
+        assert(popup->isVisible());
+        const int rowHeight = popup->height() - 4;
+        const QPoint removePoint(popup->width() - rowHeight / 2, 2 + rowHeight / 2);
+        sendLeftClick(popup, removePoint);
+        QApplication::processEvents();
 
-    assert(removed);
-    assert(!popup->isVisible());
+        assert(removed);
+        assert(!popup->isVisible());
 
-    delete combo;
-    QApplication::processEvents();
+        delete combo;
+        QApplication::processEvents();
+    }
+
+    {
+        auto* host = new QWidget;
+        host->resize(240, 120);
+
+        bool removed = false;
+        qtlogin::sdologin::AccountHistoryCombo::Options options;
+        options.skinRoot = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("skin"));
+        options.placeholder = QStringLiteral("account");
+        options.popupFontPixelSize = 18;
+        options.accounts = {
+            {L"18070557376", 0},
+        };
+        options.removeHandler = [&](const std::wstring& account) {
+            removed = account == L"18070557376";
+            delete host;
+            host = nullptr;
+        };
+
+        auto* combo = new qtlogin::sdologin::AccountHistoryCombo(std::move(options), host);
+        combo->setGeometry(0, 0, 177, 29);
+        host->show();
+        QApplication::processEvents();
+
+        const auto buttons = combo->findChildren<QPushButton*>();
+        assert(!buttons.empty());
+        sendLeftClick(buttons.front(), buttons.front()->rect().center());
+
+        auto* popup = host->findChild<QFrame*>(QStringLiteral("accountHistoryPopup"));
+        assert(popup);
+        assert(popup->isVisible());
+        const int rowHeight = popup->height() - 4;
+        const QPoint removePoint(popup->width() - rowHeight / 2, 2 + rowHeight / 2);
+        sendLeftClick(popup, removePoint);
+        QApplication::processEvents();
+
+        assert(removed);
+        assert(!host);
+    }
     return 0;
 }

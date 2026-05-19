@@ -106,12 +106,25 @@ bool queryIgwModule(LPigwGetModuleProbe getModule, REFIID riid, const wchar_t* n
 
 bool g_payCallbackCalled = false;
 int g_payCallbackCode = SDOL_ERRORCODE_FAILED;
+bool g_loginCallbackCalled = false;
+int g_loginCallbackCode = SDOL_ERRORCODE_FAILED;
+std::wstring g_loginCallbackSession;
 
 BOOL CALLBACK payCallback(int errorCode, const char*)
 {
     g_payCallbackCalled = true;
     g_payCallbackCode = errorCode;
     return TRUE;
+}
+
+int CALLBACK loginCallback(int errorCode, const SDOLLoginResult* result, int userData, int)
+{
+    g_loginCallbackCalled = true;
+    g_loginCallbackCode = errorCode;
+    if (errorCode == SDOL_ERRORCODE_OK && result && result->SessionId) {
+        g_loginCallbackSession = result->SessionId;
+    }
+    return userData;
 }
 
 bool verifyCryptoBridgeExports()
@@ -172,6 +185,37 @@ bool verifyWebSdkCalls(LPSDOLGetModule getModule)
     }
 
     login->Release();
+    return true;
+}
+
+bool verifySdolLoginProcessRelaunch(LPSDOLGetModule getModule)
+{
+    ISDOLLogin7* login = nullptr;
+    int code = getModule(__uuidof(ISDOLLogin7), reinterpret_cast<void**>(&login));
+    if (code != SDOL_ERRORCODE_OK || !login) {
+        std::wcerr << L"SDOLGetModule(ISDOLLogin7) for relaunch test failed, code=" << code << L"\n";
+        return false;
+    }
+
+    SetEnvironmentVariableW(L"QTLOGIN_MOCK_SUCCESS", L"1");
+    SetEnvironmentVariableW(L"QTLOGIN_TEST_EXIT_FIRST_LOGIN_PROCESS", L"1");
+    g_loginCallbackCalled = false;
+    g_loginCallbackCode = SDOL_ERRORCODE_FAILED;
+    g_loginCallbackSession.clear();
+
+    code = login->ShowLoginDialog(&loginCallback, SDOL_LOGINRESULT_CLOSE, 0);
+
+    SetEnvironmentVariableW(L"QTLOGIN_TEST_EXIT_FIRST_LOGIN_PROCESS", nullptr);
+    SetEnvironmentVariableW(L"QTLOGIN_MOCK_SUCCESS", nullptr);
+    login->Release();
+
+    if (code != SDOL_ERRORCODE_OK || !g_loginCallbackCalled || g_loginCallbackCode != SDOL_ERRORCODE_OK || g_loginCallbackSession.empty()) {
+        std::wcerr << L"sdologin relaunch should recover first process exit, code=" << code
+                   << L" callback=" << g_loginCallbackCalled
+                   << L" callbackCode=" << g_loginCallbackCode
+                   << L" session=" << g_loginCallbackSession << L"\n";
+        return false;
+    }
     return true;
 }
 
@@ -299,7 +343,8 @@ int wmain()
         queryModule(getModule, __uuidof(ISDOADx8AbiProbe), L"ISDOADx8") &&
         queryModule(getModule, __uuidof(ISDOADx9AbiProbe), L"ISDOADx9") &&
         queryModule(getModule, __uuidof(ISDOADx11AbiProbe), L"ISDOADx11") &&
-        verifyWebSdkCalls(getModule);
+        verifyWebSdkCalls(getModule) &&
+        verifySdolLoginProcessRelaunch(getModule);
 
     terminal();
 

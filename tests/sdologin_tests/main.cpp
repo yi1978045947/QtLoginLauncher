@@ -30,6 +30,7 @@ int main()
         L"--standalone-demo",
         L"--mock-cancel",
         L"--mock-success",
+        L"--mock-exit-after-show",
         L"--auto-success-ms=50",
         L"--standalone-protocol=privacy",
         L"--standalone-url=https://example.com/",
@@ -40,6 +41,7 @@ int main()
     assert(options.standaloneDemo);
     assert(options.mockCancel);
     assert(options.mockSuccess);
+    assert(options.mockExitAfterShow);
     assert(options.autoSuccessMs == 50);
     assert(options.standaloneProtocol == L"privacy");
     assert(options.standaloneUrl == L"https://example.com/");
@@ -49,6 +51,7 @@ int main()
     assert(!defaults.standaloneDemo);
     assert(!defaults.mockCancel);
     assert(!defaults.mockSuccess);
+    assert(!defaults.mockExitAfterShow);
     assert(defaults.autoSuccessMs < 0);
 
     const qtlogin::sdologin::SdologinOptions badAuto = parseCommandLineArguments({L"sdologin.exe", L"--auto-success-ms=abc"});

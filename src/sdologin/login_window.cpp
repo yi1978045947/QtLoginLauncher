@@ -1413,7 +1413,7 @@ void LoginWindow::registerSharedAccountEdit(QLineEdit* edit)
         return item.data() == edit;
     });
     if (existing == sharedAccountEdits_.end()) {
-        sharedAccountEdits_.push_back(QPointer<QLineEdit>(edit));
+        sharedAccountEdits_.append(QPointer<QLineEdit>(edit));
     }
     if (!sharedAccountText_.isEmpty()) {
         const QSignalBlocker blocker(edit);
@@ -1431,11 +1431,11 @@ void LoginWindow::updateSharedAccountText(QLineEdit* source, const QString& text
         return;
     }
     sharedAccountText_ = normalized;
-    sharedAccountEdits_.erase(
-        std::remove_if(sharedAccountEdits_.begin(), sharedAccountEdits_.end(), [](const QPointer<QLineEdit>& edit) {
-            return edit.isNull();
-        }),
-        sharedAccountEdits_.end());
+    for (int i = sharedAccountEdits_.size() - 1; i >= 0; --i) {
+        if (sharedAccountEdits_.at(i).isNull()) {
+            sharedAccountEdits_.removeAt(i);
+        }
+    }
     for (const QPointer<QLineEdit>& editPointer : sharedAccountEdits_) {
         QLineEdit* edit = editPointer.data();
         if (!edit || edit == source) {

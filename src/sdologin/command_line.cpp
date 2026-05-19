@@ -49,6 +49,8 @@ SdologinOptions parseCommandLineArguments(const std::vector<std::wstring>& argum
             options.mockCancel = true;
         } else if (arg == L"--mock-success") {
             options.mockSuccess = true;
+        } else if (arg == L"--mock-exit-after-show") {
+            options.mockExitAfterShow = true;
         } else if (startsWith(arg, autoPrefix.c_str())) {
             options.autoSuccessMs = parsePositiveInt(arg.substr(autoPrefix.size()));
         }

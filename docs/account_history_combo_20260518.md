@@ -44,8 +44,9 @@ Implemented in:
   - Rows use `combobox/itemselect.png` for full-row hover/selection, falling back to `combobox/select_item.png`.
   - Delete button uses `login/icon_delete_n.png`, `icon_delete_o.png`, `icon_delete_c.png`, falling back to the old `combobox/delete_*` images.
   - The dropdown is custom-painted by one popup widget instead of being rebuilt from child `QPushButton` rows. This avoids deleting or hiding button children while a delete-click event is still being dispatched.
-  - Delete first closes the popup and updates the in-memory row list, then queues the outer `userinfo.xml` write to the next Qt event tick.
-  - The popup is owned logically by `AccountHistoryCombo` and deleted in the combo destructor, even though it is parented to the top login window for overlay positioning.
+  - Delete first closes the popup and queues the outer `userinfo.xml` write to the next Qt event tick.
+  - The popup is parented to the top login window for overlay positioning; `AccountHistoryCombo` detaches callbacks and hides it during destruction so stale popup events cannot call back into a deleted combo.
+  - The public setter still accepts the config layer's `std::vector<UserAccountEntry>`, but the widget stores accounts internally as `QVector<QString>`. This keeps the Qt UI control out of MSVC Debug STL iterator-proxy lifetime issues when a delete click refreshes the account list.
 - `tests/account_history_combo_tests`
   - Creates a real Qt Widgets `AccountHistoryCombo`.
   - Opens the skinned dropdown through the arrow button.
@@ -109,3 +110,12 @@ cmake --build .\qtlogin_rewrite\build_qt5_32 --config Debug --target sdologin co
 .\qtlogin_rewrite\build_qt5_32\bin\Debug\config_tests.exe
 .\qtlogin_rewrite\build_qt5_32\bin\Debug\account_history_combo_tests.exe
 ```
+
+2026-05-19 delete crash follow-up:
+
+```bat
+cmake --build .\qtlogin_rewrite\build_qt5_32 --config Debug --target sdologin account_history_combo_tests -- /m
+.\qtlogin_rewrite\build_qt5_32\bin\Debug\account_history_combo_tests.exe
+```
+
+The test covers deleting an account while refreshing the combo list and deleting while the host widget is destroyed by the remove callback.

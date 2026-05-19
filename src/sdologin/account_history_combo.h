@@ -6,6 +6,7 @@
 #include <QLineEdit>
 #include <QPointer>
 #include <QString>
+#include <QVector>
 #include <QWidget>
 
 #include "config_manager.h"
@@ -47,9 +48,13 @@ private:
     void rebuildPopup();
     void schedulePopupRefresh();
     void selectAccount(const QString& account);
-    void removeAccount(const std::wstring& account);
+    void removeAccount(const QString& account);
 
-    Options options_;
+    QString skinRoot_;
+    QString placeholder_;
+    int popupFontPixelSize_ = 0;
+    QVector<QString> accounts_;
+    std::function<void(const std::wstring&)> removeHandler_;
     QLineEdit* edit_ = nullptr;
     QPushButton* dropButton_ = nullptr;
     QPointer<QFrame> popup_;

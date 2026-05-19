@@ -14,6 +14,7 @@
 #include <QResizeEvent>
 #include <QSignalBlocker>
 #include <QTimer>
+#include <QVector>
 #include <QtGlobal>
 
 #include <functional>
@@ -37,11 +38,37 @@ QString editStyle(const QString& normalImage, const QString& focusImage)
         .arg(imageUrl(normalImage), imageUrl(focusImage));
 }
 
+QVector<QString> accountTextList(const std::vector<qtlogin::config::ConfigManager::UserAccountEntry>& accounts)
+{
+    QVector<QString> result;
+    result.reserve(static_cast<int>(accounts.size()));
+    for (const auto& account : accounts) {
+        const QString text = QString::fromStdWString(account.name).trimmed();
+        if (!text.isEmpty()) {
+            result.push_back(text);
+        }
+    }
+    return result;
+}
+
+void removeAccountText(QVector<QString>* accounts, const QString& account)
+{
+    if (!accounts) {
+        return;
+    }
+    const QString normalized = account.trimmed();
+    for (int i = accounts->size() - 1; i >= 0; --i) {
+        if (accounts->at(i).compare(normalized, Qt::CaseInsensitive) == 0) {
+            accounts->removeAt(i);
+        }
+    }
+}
+
 class AccountHistoryPopup final : public QFrame {
 public:
     struct Item {
         QString text;
-        std::wstring account;
+        QString account;
     };
 
     explicit AccountHistoryPopup(QWidget* parent = nullptr)
@@ -53,7 +80,7 @@ public:
     }
 
     void configure(
-        std::vector<Item> items,
+        QVector<Item> items,
         const QString& backgroundPath,
         const QString& selectedPath,
         const QString& deleteNormalPath,
@@ -62,7 +89,7 @@ public:
         const QFont& popupFont,
         int rowHeight,
         std::function<void(const QString&)> selectHandler,
-        std::function<void(const std::wstring&)> removeHandler)
+        std::function<void(const QString&)> removeHandler)
     {
         items_ = std::move(items);
         background_ = QPixmap(backgroundPath);
@@ -79,6 +106,17 @@ public:
         hoveredDelete_ = false;
         pressedDelete_ = false;
         update();
+    }
+
+    void detachHandlers()
+    {
+        selectHandler_ = nullptr;
+        removeHandler_ = nullptr;
+        items_.clear();
+        hoveredRow_ = -1;
+        pressedRow_ = -1;
+        hoveredDelete_ = false;
+        pressedDelete_ = false;
     }
 
 protected:
@@ -110,7 +148,7 @@ protected:
             painter.drawText(
                 textRect,
                 Qt::AlignVCenter | Qt::AlignLeft,
-                metrics.elidedText(items_[static_cast<size_t>(i)].text, Qt::ElideRight, textRect.width()));
+                metrics.elidedText(items_[i].text, Qt::ElideRight, textRect.width()));
 
             const QRect removeRect = deleteRect(i);
             const QPixmap& removeIcon = (i == pressedRow_ && pressedDelete_)
@@ -168,12 +206,12 @@ protected:
         const int row = rowAt(event->pos());
         const bool removeClick = row >= 0 && row == pressedRow_ && pressedDelete_ && deleteRect(row).contains(event->pos());
         const bool selectClick = row >= 0 && row == pressedRow_ && !pressedDelete_;
-        const QString selectedText = (row >= 0 && row < static_cast<int>(items_.size()))
-            ? items_[static_cast<size_t>(row)].text
+        const QString selectedText = (row >= 0 && row < items_.size())
+            ? items_[row].text
             : QString();
-        const std::wstring selectedAccount = (row >= 0 && row < static_cast<int>(items_.size()))
-            ? items_[static_cast<size_t>(row)].account
-            : std::wstring();
+        const QString selectedAccount = (row >= 0 && row < items_.size())
+            ? items_[row].account
+            : QString();
 
         pressedRow_ = -1;
         pressedDelete_ = false;
@@ -204,10 +242,10 @@ private:
             return -1;
         }
         const int row = (pos.y() - 2) / rowHeight_;
-        return row >= 0 && row < static_cast<int>(items_.size()) && rowRect(row).contains(pos) ? row : -1;
+        return row >= 0 && row < items_.size() && rowRect(row).contains(pos) ? row : -1;
     }
 
-    std::vector<Item> items_;
+    QVector<Item> items_;
     QPixmap background_;
     QPixmap selected_;
     QPixmap deleteNormal_;
@@ -220,21 +258,25 @@ private:
     bool hoveredDelete_ = false;
     bool pressedDelete_ = false;
     std::function<void(const QString&)> selectHandler_;
-    std::function<void(const std::wstring&)> removeHandler_;
+    std::function<void(const QString&)> removeHandler_;
 };
 
 }
 
 AccountHistoryCombo::AccountHistoryCombo(Options options, QWidget* parent)
     : QWidget(parent)
-    , options_(std::move(options))
+    , skinRoot_(std::move(options.skinRoot))
+    , placeholder_(std::move(options.placeholder))
+    , popupFontPixelSize_(options.popupFontPixelSize)
+    , accounts_(accountTextList(options.accounts))
+    , removeHandler_(std::move(options.removeHandler))
 {
     setAttribute(Qt::WA_StyledBackground, true);
     setStyleSheet(QStringLiteral("background:transparent;"));
 
     edit_ = new QLineEdit(this);
     edit_->setObjectName(QStringLiteral("accountEdit"));
-    edit_->setPlaceholderText(options_.placeholder);
+    edit_->setPlaceholderText(placeholder_);
     edit_->setStyleSheet(editStyle(
         skinPath(QStringLiteral("combobox/combo_n.png")),
         skinPath(QStringLiteral("combobox/combo_o.png"))));
@@ -254,7 +296,8 @@ AccountHistoryCombo::~AccountHistoryCombo()
 {
     if (popup_) {
         popup_->removeEventFilter(this);
-        delete popup_.data();
+        static_cast<AccountHistoryPopup*>(popup_.data())->detachHandlers();
+        popup_->hide();
         popup_ = nullptr;
     }
 }
@@ -275,7 +318,8 @@ void AccountHistoryCombo::setTextSilently(const QString& text)
 
 void AccountHistoryCombo::setAccounts(std::vector<qtlogin::config::ConfigManager::UserAccountEntry> accounts)
 {
-    options_.accounts = std::move(accounts);
+    const QVector<QString> updatedAccounts = accountTextList(accounts);
+    accounts_ = updatedAccounts;
     if (popup_ && popup_->isVisible()) {
         schedulePopupRefresh();
     }
@@ -300,7 +344,7 @@ bool AccountHistoryCombo::eventFilter(QObject* watched, QEvent* event)
 
 QString AccountHistoryCombo::skinPath(const QString& relative) const
 {
-    return QDir(options_.skinRoot).filePath(relative);
+    return QDir(skinRoot_).filePath(relative);
 }
 
 QString AccountHistoryCombo::resolveSkinPath(const QString& preferred, const QString& fallback) const
@@ -332,7 +376,7 @@ void AccountHistoryCombo::togglePopup()
 
 void AccountHistoryCombo::showPopup()
 {
-    if (options_.accounts.empty()) {
+    if (accounts_.isEmpty()) {
         return;
     }
     rebuildPopup();
@@ -368,21 +412,21 @@ void AccountHistoryCombo::rebuildPopup()
     }
 
     QFont popupFont = edit_ ? edit_->font() : font();
-    if (options_.popupFontPixelSize > 0) {
-        popupFont.setPixelSize(options_.popupFontPixelSize);
+    if (popupFontPixelSize_ > 0) {
+        popupFont.setPixelSize(popupFontPixelSize_);
     }
 
     const QFontMetrics metrics(popupFont);
     const int rowHeight = qMax(qMax(24, height()), metrics.height() + 12);
     const int popupWidth = width();
-    const int popupHeight = qMin(static_cast<int>(options_.accounts.size()) * rowHeight + 4, 10 * rowHeight + 4);
+    const int popupHeight = qMin(accounts_.size() * rowHeight + 4, 10 * rowHeight + 4);
     popup_->resize(popupWidth, popupHeight);
     popup_->setFont(popupFont);
 
-    std::vector<AccountHistoryPopup::Item> popupItems;
-    popupItems.reserve(options_.accounts.size());
-    for (const auto& account : options_.accounts) {
-        popupItems.push_back({QString::fromStdWString(account.name), account.name});
+    QVector<AccountHistoryPopup::Item> popupItems;
+    popupItems.reserve(accounts_.size());
+    for (const QString& accountText : accounts_) {
+        popupItems.push_back({accountText, accountText});
     }
 
     auto* historyPopup = static_cast<AccountHistoryPopup*>(popup_.data());
@@ -398,7 +442,7 @@ void AccountHistoryCombo::rebuildPopup()
         [this](const QString& account) {
             selectAccount(account);
         },
-        [this](const std::wstring& account) {
+        [this](const QString& account) {
             removeAccount(account);
         });
 }
@@ -408,7 +452,7 @@ void AccountHistoryCombo::schedulePopupRefresh()
     if (!popup_ || !popup_->isVisible()) {
         return;
     }
-    if (options_.accounts.empty()) {
+    if (accounts_.isEmpty()) {
         hidePopup();
         return;
     }
@@ -422,7 +466,7 @@ void AccountHistoryCombo::schedulePopupRefresh()
         if (!popup_ || !popup_->isVisible()) {
             return;
         }
-        if (options_.accounts.empty()) {
+        if (accounts_.isEmpty()) {
             hidePopup();
             return;
         }
@@ -440,19 +484,23 @@ void AccountHistoryCombo::selectAccount(const QString& account)
     hidePopup();
 }
 
-void AccountHistoryCombo::removeAccount(const std::wstring& account)
+void AccountHistoryCombo::removeAccount(const QString& account)
 {
-    const auto removeHandler = options_.removeHandler;
-    options_.accounts = removeAccountHistoryEntry(options_.accounts, account);
+    const auto removeHandler = removeHandler_;
     hidePopup();
-    if (!removeHandler || !shouldQueueAccountHistoryRemoveFromPopupClick()) {
+    if (!removeHandler) {
+        removeAccountText(&accounts_, account);
+        return;
+    }
+    if (!shouldQueueAccountHistoryRemoveFromPopupClick()) {
+        removeHandler(account.toStdWString());
         return;
     }
 
     QPointer<AccountHistoryCombo> guard(this);
     QTimer::singleShot(0, this, [guard, removeHandler, account]() {
         if (guard) {
-            removeHandler(account);
+            removeHandler(account.toStdWString());
         }
     });
 }

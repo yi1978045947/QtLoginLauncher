@@ -282,6 +282,11 @@ int main(int argc, char* argv[])
     const std::wstring appName = qtlogin::common::utf8ToWide(fieldOrEmpty(command, "appName"));
     qtlogin::common::logLine(L"sdologin", L"show login requested for " + appName);
 
+    if (options.mockExitAfterShow) {
+        qtlogin::common::logLine(L"sdologin", L"mock exit after show login command");
+        return 99;
+    }
+
 #ifdef QTLOGIN_ENABLE_QT_UI
     if (options.mockSuccess && options.autoSuccessMs < 0) {
         return connection.send(makeResultMessage(command.requestId, !options.mockCancel)) ? 0 : 7;
